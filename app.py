@@ -38,13 +38,16 @@ board = createBoard(boardSize)
 ############### VIEW ###############
 
 # * variable init
+PLAYER_COLOR = '#FD0002'
+OPPONENT_COLOR = '#010101'
 BOARD_LENGTH = 800
-BOARD_COLOR = '#010101'
+BOARD_COLOR = PLAYER_COLOR
 SQUARE_LENGTH = BOARD_LENGTH / boardSize
-SQUARE_COLOR = '#000'
+SQUARE_COLOR = OPPONENT_COLOR  # must have opposite color of board
 PIECE_RADIUS = (0.95 * SQUARE_LENGTH) / 2
-PLAYER_COLOR = "#FD0002"
-OPPONENT_COLOR = BOARD_COLOR
+SELECTED_PIECE_COLOR = '#FFEB41'
+# store previous piece event : (0) selectedCanvas, (1) selectedPiece, (2) Piece position
+pieceEvent = [None, None, None]
 
 # * method init
 
@@ -58,11 +61,36 @@ def createPiece(canvas, canvasLength, squareValue, playerColor, opponentColor):
         pieceColor = opponentColor
     elif (squareValue == 'P'):
         pieceColor = playerColor
+        canvas.bind("<Button-1>", selectPiece)
     canvas.create_oval(pieceTopLeftCorner, pieceBottomRightCorner,
                        fill=pieceColor, outline='white', width=pieceBorderWidth)
 
+# event listeners
 
-def showBoard(board, root, squareLength, pieceRadius, playerColor, opponentColor):
+
+def selectPiece(event):
+    print("clicked at", event.x, event.y)
+
+    # reset last highlighted piece
+    if (pieceEvent[0] != None):
+        pieceEvent[0].itemconfigure(pieceEvent[1], fill=PLAYER_COLOR)
+    # get piece event
+    triggeredCanvas = event.widget
+    selectedPiece = triggeredCanvas.find_closest(event.x, event.y)
+    # store piece event to global variable
+    pieceEvent[0] = triggeredCanvas
+    pieceEvent[1] = selectedPiece
+    pieceEvent[2] = (triggeredCanvas.grid_info()['column'],
+                     triggeredCanvas.grid_info()['row'])
+    # change piece color to highlight it
+    triggeredCanvas.itemconfigure(selectedPiece, fill=SELECTED_PIECE_COLOR)
+
+
+def selectEmptySquare(event):
+    return ''
+
+
+def showBoard(board, root, squareLength, squareColor, pieceRadius, playerColor, opponentColor):
     print(squareLength)
     for row in range(len(board)):
         for column in range(len(board[0])):
@@ -70,10 +98,13 @@ def showBoard(board, root, squareLength, pieceRadius, playerColor, opponentColor
             squareValue = board[row][column]
             if (squareValue != ''):
                 square = Canvas(root, width=squareLength,
-                                height=squareLength, bg=playerColor, bd=-2)  # ? bd removes Canvas default margin
+                                height=squareLength, bg=squareColor, bd=-2)  # ? bd removes Canvas default margin
                 if (squareValue != 'E'):
                     createPiece(square, squareLength, squareValue,
                                 playerColor, opponentColor)
+                else:
+                    square.bind("<Button-1>", selectEmptySquare)
+
                 square.grid(row=row, column=column)
 
 
@@ -84,7 +115,7 @@ root.geometry(str(BOARD_LENGTH) + 'x' + str(BOARD_LENGTH))
 root.configure(bg=BOARD_COLOR)
 
 # render board
-showBoard(board, root, SQUARE_LENGTH, PIECE_RADIUS,
+showBoard(board, root, SQUARE_LENGTH, SQUARE_COLOR, PIECE_RADIUS,
           PLAYER_COLOR, OPPONENT_COLOR)
 
 
