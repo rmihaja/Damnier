@@ -5,7 +5,7 @@ from tkinter import *
 # * functions init
 
 
-def createBoard(size):
+def generateBoard(size):
     board = []
     # filling the board with oponent pieces
     for row in range(0, size):
@@ -32,8 +32,19 @@ def createBoard(size):
 # * variable init
 
 
+def movePiece(piecePosition, emptyPosition):
+    xpiece, ypiece = piecePosition
+    xempty, yempty = emptyPosition
+
+    # interchange case value
+    board[xempty][yempty] = 'P'
+    board[xpiece][ypiece] = 'E'
+
+    renderBoard()
+
+
 boardSize = 8  # ? american chekers has 8 rows and 8 columns
-board = createBoard(boardSize)
+board = generateBoard(boardSize)
 
 ############### VIEW ###############
 
@@ -48,50 +59,17 @@ PIECE_RADIUS = (0.95 * SQUARE_LENGTH) / 2
 SELECTED_PIECE_COLOR = '#FFEB41'
 # store previous piece event : (0) selectedCanvas, (1) selectedPiece, (2) Piece position
 pieceEvent = [None, None, None]
+canMove = True
 
 # * method init
 
 
-def createPiece(canvas, canvasLength, squareValue, playerColor, opponentColor):
-    pieceBorderWidth = 3
-    pieceColor = ''
-    pieceTopLeftCorner = 0.1 * canvasLength, 0.1 * canvasLength
-    pieceBottomRightCorner = (0.9) * canvasLength, (0.9) * canvasLength
-    if (squareValue == 'O'):
-        pieceColor = opponentColor
-    elif (squareValue == 'P'):
-        pieceColor = playerColor
-        canvas.bind("<Button-1>", selectPiece)
-    canvas.create_oval(pieceTopLeftCorner, pieceBottomRightCorner,
-                       fill=pieceColor, outline='white', width=pieceBorderWidth)
-
-# event listeners
+def renderBoard():
+    createBoard(board, root, SQUARE_LENGTH, SQUARE_COLOR, PIECE_RADIUS,
+                PLAYER_COLOR, OPPONENT_COLOR)
 
 
-def selectPiece(event):
-    print("clicked at", event.x, event.y)
-
-    # reset last highlighted piece
-    if (pieceEvent[0] != None):
-        pieceEvent[0].itemconfigure(pieceEvent[1], fill=PLAYER_COLOR)
-    # get piece event
-    triggeredCanvas = event.widget
-    selectedPiece = triggeredCanvas.find_closest(event.x, event.y)
-    # store piece event to global variable
-    pieceEvent[0] = triggeredCanvas
-    pieceEvent[1] = selectedPiece
-    pieceEvent[2] = (triggeredCanvas.grid_info()['column'],
-                     triggeredCanvas.grid_info()['row'])
-    # change piece color to highlight it
-    triggeredCanvas.itemconfigure(selectedPiece, fill=SELECTED_PIECE_COLOR)
-
-
-def selectEmptySquare(event):
-    return ''
-
-
-def showBoard(board, root, squareLength, squareColor, pieceRadius, playerColor, opponentColor):
-    print(squareLength)
+def createBoard(board, root, squareLength, squareColor, pieceRadius, playerColor, opponentColor):
     for row in range(len(board)):
         for column in range(len(board[0])):
             # set square color
@@ -108,6 +86,51 @@ def showBoard(board, root, squareLength, squareColor, pieceRadius, playerColor, 
                 square.grid(row=row, column=column)
 
 
+def createPiece(canvas, canvasLength, squareValue, playerColor, opponentColor):
+    pieceBorderWidth = 3
+    pieceColor = ''
+    pieceTopLeftCorner = 0.1 * canvasLength, 0.1 * canvasLength
+    pieceBottomRightCorner = (0.9) * canvasLength, (0.9) * canvasLength
+    if (squareValue == 'O'):
+        pieceColor = opponentColor
+    elif (squareValue == 'P'):
+        pieceColor = playerColor
+        canvas.bind("<Button-1>", selectPiece)
+    canvas.create_oval(pieceTopLeftCorner, pieceBottomRightCorner,
+                       fill=pieceColor, outline='white', width=pieceBorderWidth)
+
+
+def getGridPosition(selectedWidget):
+    return (selectedWidget.grid_info()['row'],
+            selectedWidget.grid_info()['column'])
+
+# event listeners
+
+
+def selectPiece(event):
+
+    # reset last highlighted piece
+    if (pieceEvent[0] != None):
+        pieceEvent[0].itemconfigure(pieceEvent[1], fill=PLAYER_COLOR)
+    # get piece event
+    triggeredCanvas = event.widget
+    selectedPiece = triggeredCanvas.find_closest(event.x, event.y)
+    # store piece event to global variable
+    pieceEvent[0] = triggeredCanvas
+    pieceEvent[1] = selectedPiece
+    pieceEvent[2] = getGridPosition(triggeredCanvas)
+    # change piece color to highlight it
+    triggeredCanvas.itemconfigure(selectedPiece, fill=SELECTED_PIECE_COLOR)
+
+
+def selectEmptySquare(event):
+    emptyPosition = getGridPosition(event.widget)
+    if (pieceEvent[2] != None):
+        # check if movement is valid (can only move forward)
+        if (emptyPosition[0] - pieceEvent[2][0] == -1):
+            movePiece(pieceEvent[2], emptyPosition)
+
+
 # Tkinter init
 root = Tk()
 root.title('Damnier')
@@ -115,9 +138,7 @@ root.geometry(str(BOARD_LENGTH) + 'x' + str(BOARD_LENGTH))
 root.configure(bg=BOARD_COLOR)
 
 # render board
-showBoard(board, root, SQUARE_LENGTH, SQUARE_COLOR, PIECE_RADIUS,
-          PLAYER_COLOR, OPPONENT_COLOR)
-
+renderBoard()
 
 # run tkinter
 root.mainloop()
