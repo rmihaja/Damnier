@@ -70,7 +70,7 @@ def showBoard(board, root, squareLength, pieceRadius, playerColor, opponentColor
             squareValue = board[row][column]
             if (squareValue != ''):
                 square = Canvas(root, width=squareLength,
-                                height=squareLength, bg=opponentColor, bd=-2)
+                                height=squareLength, bg=playerColor, bd=-2)  # ? bd removes Canvas default margin
                 if (squareValue != 'E'):
                     createPiece(square, squareLength, squareValue,
                                 playerColor, opponentColor)
@@ -81,10 +81,12 @@ def showBoard(board, root, squareLength, pieceRadius, playerColor, opponentColor
 root = Tk()
 root.title('Damnier')
 root.geometry(str(BOARD_LENGTH) + 'x' + str(BOARD_LENGTH))
+root.configure(bg=BOARD_COLOR)
 
 # render board
 showBoard(board, root, SQUARE_LENGTH, PIECE_RADIUS,
           PLAYER_COLOR, OPPONENT_COLOR)
+
 
 # run tkinter
 root.mainloop()
