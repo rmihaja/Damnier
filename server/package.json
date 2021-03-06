@@ -1,0 +1,26 @@
+{
+  "name": "damnier-app",
+  "version": "1.0.0",
+  "description": "A multiplayer checkers game",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rmihaja/Damnier.git"
+  },
+  "keywords": [
+    "python",
+    "tkinter",
+    "nodejs",
+    "websocket",
+    "socketio"
+  ],
+  "author": "Mihaja Razafimahefa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Rmihaja/Damnier/issues"
+  },
+  "homepage": "https://github.com/Rmihaja/Damnier#readme"
+}
