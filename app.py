@@ -1,6 +1,27 @@
 from tkinter import *
+import socketio
+
+############### SERVER CONNECTION ###############
+
+#  setup client
+socket = socketio.Client()
+# connect to socket server
+socket.connect('http://localhost:3000')
+
+# * event handler
+
+
+@socket.on('connect')
+def onConnect():
+    print('I\'m in!')
+
+
+@socket.on('disconnect')
+def onDisconnect():
+    print('Bye')
 
 ############### MODELE ###############
+
 
 # * functions init
 
