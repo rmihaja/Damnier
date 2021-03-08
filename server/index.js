@@ -5,9 +5,17 @@ const Game = require('./model/game');
 let waitingRoom = [];
 let game;
 
+// * heroku server config 
+let port = process.env.PORT;
+// if working with remote server, port will have value
+if (port == null || port == "") {
+    // if not, set arbitrary port
+    port = 5500;
+}
+
 // * socket.io config
 
-const io = require('socket.io')(5511);
+const io = require('socket.io')(port);
 
 io.on('connection', socket => {
     console.log(`Someone went in! There are now ${waitingRoom.length + 1} waiting`);
