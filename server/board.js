@@ -40,11 +40,9 @@ module.exports = class Board {
     getBoardLayout(playerValue) {
         if(playerValue == 1)
         {
-            
             return JSON.stringify(this.layout);
         }
         else {
-            console.log('returning black', this.layout);
             return JSON.stringify(this.getBlackLayout());
         }
     }

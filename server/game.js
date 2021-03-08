@@ -17,7 +17,6 @@ module.exports = class Game {
 
     updatePlayersBoard() {
         for (let player of this.players) {
-            console.log(player.value);
             player.socket.emit('loadboard', this.board.getBoardLayout(player.value));
         }
     }
