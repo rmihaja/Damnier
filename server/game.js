@@ -4,7 +4,7 @@ module.exports = class Game {
 
     constructor(size, initiator, guest) {
         this.board = new Board(size);
-        this.turn = 0
+        this.turn = 0;
         this.player1 = {
             value: 1,
             socket: initiator,
@@ -35,4 +35,11 @@ module.exports = class Game {
         };
         player.socket.emit('message', JSON.stringify(messageData));
     }
+
+    onPlayerMove(movement) {
+        console.log(movement);
+        this.board.movePiece(movement.playerValue, movement.piecePosition, movement.emptyPosition);
+            
+    }
+
 }

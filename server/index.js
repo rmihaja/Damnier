@@ -1,7 +1,7 @@
 const { Socket } = require('socket.io');
 const Game = require('./game'); 
 
-// * variable init
+// * variable init 
 let waitingRoom = [];
 let game;
 
@@ -15,6 +15,8 @@ io.on('connection', socket => {
     // temporarely storing player socket while waiting for opponent
     waitingRoom.push(socket);
 
+    // * event emitters
+
     // send player value if player'1' or '2'
     socket.emit('playersetup', JSON.stringify(waitingRoom.length))
     
@@ -27,4 +29,13 @@ io.on('connection', socket => {
         console.log(`There are now ${waitingRoom.length} waiting`)
         game.incrementTurn();
     }
+
+    // * event handlers
+
+    // player plays a movement
+    socket.on('move', data => {
+        game.onPlayerMove(JSON.parse(data));
+        game.updatePlayersBoard();
+        game.incrementTurn();
+    });
 })

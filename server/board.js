@@ -43,25 +43,29 @@ module.exports = class Board {
             return JSON.stringify(this.layout);
         }
         else {
-            return JSON.stringify(this.getBlackLayout());
+            return JSON.stringify(this.layout);
         }
     }
 
     // flip the board horizontally for player as player2
-    getBlackLayout() {
-        let blackLayout = this.layout;
-        for (let i = 0; i < blackLayout.length; i++) {
-            blackLayout[i].reverse(); // ? reverse each row
+    flipLayout(layout) {
+        let flippedLayout = layout;
+        for (let i = 0; i < flippedLayout.length; i++) {
+            flippedLayout[i].reverse(); // ? reverse each row
         }
-        return blackLayout.reverse() // ? reverse column before return
+        return flippedLayout.reverse() // ? reverse column before return
     }
 
-    movePiece(piecePosition, emptyPosition) {
-        let xpiece, ypiece = piecePosition
-        let xempty, yempty = emptyPosition
+    movePiece(initiator, piecePosition, emptyPosition) {
+        let xpiece = piecePosition.x;
+        let ypiece = piecePosition.y;
+        let xempty = emptyPosition.x;
+        let yempty = emptyPosition.y;
 
-        // interchange case value
-        this.layout[xempty][yempty] = 'P'
-        this.layout[xpiece][ypiece] = 'E'
+        console.log(this.layout);
+        // swap case value
+        this.layout[xempty][yempty] = initiator;
+        this.layout[xpiece][ypiece] = 'E';
+        console.log(this.layout);
     }
 }

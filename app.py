@@ -92,8 +92,6 @@ class InfoLabel(tk.Frame):
 class EventHandler:
 
     selectedSquare = None
-    selectedPiece = None
-    selectedEmpty = None
 
     @classmethod
     def onPlayerSquareSelected(cls, event):
@@ -107,18 +105,22 @@ class EventHandler:
     @classmethod
     def onEmptySquareSelected(cls, event):
         print('touché')
-        if(cls.selectedSquare != None and app.isPlayerTurn):
-            cls.selectedPiece = {
+        if((cls.selectedSquare != None) and (app.isPlayerTurn)):
+            selectedPiece = {
                 'x': cls.selectedSquare.grid_info()['row'],
                 'y': cls.selectedSquare.grid_info()['column']
             }
-            cls.selectedEmpty = {
+            selectedEmpty = {
                 'x': event.widget.grid_info()['row'],
                 'y': event.widget.grid_info()['column']
             }
+            movementProperty = {
+                'playerValue': app.playerValue,
+                'piecePosition': selectedPiece,
+                'emptyPosition': selectedEmpty
+            }
             print('Sending movement to server')
-            sio.emit('move', json.dumps(selectedPiece, selectedEmpty))
-
+            socket.emit('move', json.dumps(movementProperty))
 
 ####################### SERVER CONNECTION MANAGER ######################
 
@@ -146,7 +148,6 @@ def onPlayerSetup(data):
 
 @socket.on('loadboard')
 def onloadboard(data):
-    print('Found someone else to play. Loading game!')
     global app
     app.renderBoard(json.loads(data))
 
