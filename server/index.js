@@ -1,5 +1,5 @@
 const { Socket } = require('socket.io');
-const Game = require('./game'); 
+const Game = require('./model/game'); 
 
 // * variable init 
 let waitingRoom = [];
