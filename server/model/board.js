@@ -66,12 +66,21 @@ module.exports = class Board {
 
         let deltaRow = pieceRow - emptyRow;
         let deltaColumn = pieceColumn - emptyColumn;
-
+       
         // move piece if empty square is qdjacent
         if (this.canMove(author, deltaRow, deltaColumn)) {
             this.movePiece(author, pieceRow, pieceColumn, emptyRow, emptyColumn);
             return true;
         } 
+
+        // delete opponent piece if author player can eat it
+        let eatableSquare = this.getEatableSquare(pieceRow, pieceColumn, deltaRow, deltaColumn);
+        // check if the square is not empty and belongs to opponent 
+        if (eatableSquare != 'E' && eatableSquare != author) {
+            this.eatPiece(pieceRow - 1 * Math.sign(deltaRow), pieceColumn - 1 * Math.sign(deltaColumn));
+            this.movePiece(author, pieceRow, pieceColumn, emptyRow, emptyColumn);
+            return true;
+        }
 
         return false;
 
@@ -88,16 +97,16 @@ module.exports = class Board {
                 return deltaRow == -1;
             }
         }
-        
     }
-
-    canEat(author, piecePosition, emptyPosition) {
-
+    getEatableSquare(pieceRow, pieceColumn, deltaRow, deltaColumn) {
+        if(Math.abs(deltaColumn) == 2) {
+            return this.layout[pieceRow - 1 * Math.sign(deltaRow)][pieceColumn - 1 * Math.sign(deltaColumn)];
+        }
     }
 
     eatPiece(row, column) {
 
         // replace square value to empty
-        this.layout[xpiece][ypiece] = 'E';
+        this.layout[row][column] = 'E';
     }
 }
