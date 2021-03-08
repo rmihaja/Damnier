@@ -4,7 +4,6 @@ import json
 from collections import namedtuple
 
 
-
 ####################### TKINTER BOARD MANAGER #######################
 
 class Board(tk.Frame):
@@ -43,6 +42,7 @@ class Board(tk.Frame):
             return OpponentSquare(self, self.squareSize, self.theme.squareColor,
                                   self.theme.opponentColor)
 
+
 class Square(tk.Canvas):
 
     def __init__(self, root, size, color):
@@ -55,11 +55,13 @@ class Square(tk.Canvas):
         bottomLeftPoint = 0.9 * squareSize, 0.9 * squareSize
         return (topLeftPoint, bottomLeftPoint)
 
+
 class EmptySquare(Square):
 
     def __init__(self, root, size, squareColor):
         super().__init__(root, size, squareColor)
         self.bind("<Button-1>", EventHandler.onEmptySquareSelected)
+
 
 class OpponentSquare(Square):
 
@@ -67,6 +69,7 @@ class OpponentSquare(Square):
         super().__init__(root, size, squareColor)
         self.piece = self.create_oval(Square.getPieceCorners(
             size), fill=pieceColor, outline='white', width=3)
+
 
 class PlayerSquare(OpponentSquare):
 
@@ -77,17 +80,19 @@ class PlayerSquare(OpponentSquare):
         self.bind(
             "<Button-1>", EventHandler.onPlayerSquareSelected)
 
+
 class InfoLabel(tk.Frame):
-    
+
     def __init__(self, root):
         super().__init__(master=root)
         self.label = tk.Label(self, text='hello')
         self.label.pack()
 
     def notify(self, message):
-        self.label.configure(text=message)    
+        self.label.configure(text=message)
 
 ####################### TKINTER EVENT MANAGER #######################
+
 
 class EventHandler:
 
@@ -104,15 +109,15 @@ class EventHandler:
 
     @classmethod
     def onEmptySquareSelected(cls, event):
-        print('touché')
+        # send movement position value if a piece is selected and it is the player's turn
         if((cls.selectedSquare != None) and (app.isPlayerTurn)):
             selectedPiece = {
-                'x': cls.selectedSquare.grid_info()['row'],
-                'y': cls.selectedSquare.grid_info()['column']
+                'row': cls.selectedSquare.grid_info()['row'],
+                'column': cls.selectedSquare.grid_info()['column']
             }
             selectedEmpty = {
-                'x': event.widget.grid_info()['row'],
-                'y': event.widget.grid_info()['column']
+                'row': event.widget.grid_info()['row'],
+                'column': event.widget.grid_info()['column']
             }
             movementProperty = {
                 'playerValue': app.playerValue,
@@ -121,22 +126,28 @@ class EventHandler:
             }
             print('Sending movement to server')
             socket.emit('move', json.dumps(movementProperty))
+            # reset selectedSquare
+            cls.selectedSquare = None
 
 ####################### SERVER CONNECTION MANAGER ######################
 
 # *  connection setup
 
+
 socket = socketio.Client()
 
 # * event handlers
+
 
 @socket.on('connect')
 def onConnect():
     print('You in!')
 
+
 @socket.on('disconnect')
 def onDisconnect():
     print('Oops, disconnected')
+
 
 @socket.on('playersetup')
 def onPlayerSetup(data):
@@ -144,16 +155,16 @@ def onPlayerSetup(data):
     global app
     app.setBoardProperty(json.loads(data))
     app.infoLabel.notify('En attente d\'un joueur potentiel')
-    
+
 
 @socket.on('loadboard')
 def onloadboard(data):
     global app
     app.renderBoard(json.loads(data))
 
+
 @socket.on('playerturn')
 def onPlayerTurn(data):
-    print('playerturn: ' + str(json.loads(data)))
     global app
     app.setPlayerTurn(json.loads(data))
 
@@ -183,6 +194,7 @@ class Theme:
     def __str__(self):
         return 'playerColor: ' + self.playerColor + '\n opponentColor : ' + self.opponentColor
 
+
 class App(tk.Tk):
 
     def __init__(self):
@@ -202,7 +214,6 @@ class App(tk.Tk):
         self.infoLabel = InfoLabel(self)
         self.infoLabel.grid(row=1, column=0)
 
-
     def setBoardProperty(self, playerValue):
         self.playerValue = playerValue
         self.theme = self.setTheme(self.playerValue)
@@ -214,18 +225,21 @@ class App(tk.Tk):
     # TODO : add custom theme
     def setTheme(self, playerValue):
         if (playerValue == 1):
+            self.playerColor = 'rouge'
             # player is player1 => red
             return Theme('#FD0002', '#010101', '#FD0002', '#010101', '#FFEB41')
         else:
+            self.playerColor = 'noir'
             # player is player2 => black
             return Theme('#FD0002', '#010101', '#010101', '#FD0002', '#FFEB41')
 
     def setPlayerTurn(self, turn):
         self.isPlayerTurn = turn
+        playerStatusInfo = 'Vous êtes ' + self.playerColor
         if (self.isPlayerTurn):
-            self.infoLabel.notify('C\'est votre tour')
+            self.infoLabel.notify('C\'est votre tour! ' + playerStatusInfo)
         else:
-            self.infoLabel.notify('Tour de l\'adversaire')
+            self.infoLabel.notify('Tour de l\'adversaire. ' + playerStatusInfo)
 
 
 # * application init
@@ -240,4 +254,3 @@ if __name__ == "__main__":
 
     # looping tk
     app.mainloop()
-

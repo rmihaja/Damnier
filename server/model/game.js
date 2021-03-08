@@ -37,9 +37,11 @@ module.exports = class Game {
     }
 
     onPlayerMove(movement) {
-        console.log(movement);
-        this.board.movePiece(movement.playerValue, movement.piecePosition, movement.emptyPosition);
-            
-    }
+        let isValidMovement = this.board.tryMovement(movement.playerValue, movement.piecePosition, movement.emptyPosition)
+        if (isValidMovement) {
+            this.updatePlayersBoard();
+            this.incrementTurn();
+        }
 
+    }
 }

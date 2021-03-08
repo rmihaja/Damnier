@@ -33,9 +33,5 @@ io.on('connection', socket => {
     // * event handlers
 
     // player plays a movement
-    socket.on('move', data => {
-        game.onPlayerMove(JSON.parse(data));
-        game.updatePlayersBoard();
-        game.incrementTurn();
-    });
+    socket.on('move', data => game.onPlayerMove(JSON.parse(data)));
 })

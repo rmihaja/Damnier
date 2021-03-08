@@ -3,10 +3,10 @@ module.exports = class Board {
     // * constructor init
     constructor(size) {
         this.size = size;
-        this.layout = this.generateBoard(this.size);
+        this.layout = this.createBoard(this.size);
     }
 
-    generateBoard(size) {
+    createBoard(size) {
         let layout = [];
         for (let row = 0; row < size; row++) {
             let boardRow = [];
@@ -38,15 +38,10 @@ module.exports = class Board {
 
     // return stringified array readable by python
     getBoardLayout(playerValue) {
-        if(playerValue == 1)
-        {
-            return JSON.stringify(this.layout);
-        }
-        else {
-            return JSON.stringify(this.layout);
-        }
+        return JSON.stringify(this.layout);
     }
 
+    // TODO : use this feature
     // flip the board horizontally for player as player2
     flipLayout(layout) {
         let flippedLayout = layout;
@@ -56,16 +51,53 @@ module.exports = class Board {
         return flippedLayout.reverse() // ? reverse column before return
     }
 
-    movePiece(initiator, piecePosition, emptyPosition) {
-        let xpiece = piecePosition.x;
-        let ypiece = piecePosition.y;
-        let xempty = emptyPosition.x;
-        let yempty = emptyPosition.y;
+    movePiece(playerPiece, initialRow, initialColumn, newRow, newColumn) {
+        
+        // swap square value
+        this.layout[initialRow][initialColumn] = 'E';
+        this.layout[newRow][newColumn] = playerPiece;
+    }
 
-        console.log(this.layout);
-        // swap case value
-        this.layout[xempty][yempty] = initiator;
+    tryMovement(author, piecePosition, emptyPosition) {
+        let pieceRow = piecePosition.row;
+        let pieceColumn = piecePosition.column;
+        let emptyRow = emptyPosition.row;
+        let emptyColumn = emptyPosition.column;
+
+        let deltaRow = pieceRow - emptyRow;
+        let deltaColumn = pieceColumn - emptyColumn;
+
+        // move piece if empty square is qdjacent
+        if (this.canMove(author, deltaRow, deltaColumn)) {
+            this.movePiece(author, pieceRow, pieceColumn, emptyRow, emptyColumn);
+            return true;
+        } 
+
+        return false;
+
+    }
+
+    canMove(player, deltaRow, deltaColumn) {
+        // check if player move sideways
+        if(Math.abs(deltaColumn) == 1) {
+            if (player == 1) {
+                // player1 have to move forward on the layout
+                return deltaRow == 1;
+            } else if (player == 2) {
+                // player2 have to move backward on the layout
+                return deltaRow == -1;
+            }
+        }
+        
+    }
+
+    canEat(author, piecePosition, emptyPosition) {
+
+    }
+
+    eatPiece(row, column) {
+
+        // replace square value to empty
         this.layout[xpiece][ypiece] = 'E';
-        console.log(this.layout);
     }
 }
