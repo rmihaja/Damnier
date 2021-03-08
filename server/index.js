@@ -18,12 +18,13 @@ io.on('connection', socket => {
     // send player value if player'1' or '2'
     socket.emit('playersetup', JSON.stringify(waitingRoom.length))
     
-    // initiate game when 2 player connected
+    // initiate game when 2 player are connected
     if (waitingRoom.length == 2) {
         game = new Game(8, waitingRoom[0], waitingRoom[1]);
         waitingRoom = [];
         game.updatePlayersBoard();
         console.log('Game started !')
         console.log(`There are now ${waitingRoom.length} waiting`)
+        game.incrementTurn();
     }
 })

@@ -3,6 +3,8 @@ import socketio
 import json
 from collections import namedtuple
 
+
+
 ####################### TKINTER BOARD MANAGER #######################
 
 class Board(tk.Frame):
@@ -41,7 +43,6 @@ class Board(tk.Frame):
             return OpponentSquare(self, self.squareSize, self.theme.squareColor,
                                   self.theme.opponentColor)
 
-
 class Square(tk.Canvas):
 
     def __init__(self, root, size, color):
@@ -54,13 +55,11 @@ class Square(tk.Canvas):
         bottomLeftPoint = 0.9 * squareSize, 0.9 * squareSize
         return (topLeftPoint, bottomLeftPoint)
 
-
 class EmptySquare(Square):
 
     def __init__(self, root, size, squareColor):
         super().__init__(root, size, squareColor)
         self.bind("<Button-1>", EventHandler.onEmptySquareSelected)
-
 
 class OpponentSquare(Square):
 
@@ -68,7 +67,6 @@ class OpponentSquare(Square):
         super().__init__(root, size, squareColor)
         self.piece = self.create_oval(Square.getPieceCorners(
             size), fill=pieceColor, outline='white', width=3)
-
 
 class PlayerSquare(OpponentSquare):
 
@@ -79,6 +77,15 @@ class PlayerSquare(OpponentSquare):
         self.bind(
             "<Button-1>", EventHandler.onPlayerSquareSelected)
 
+class InfoLabel(tk.Frame):
+    
+    def __init__(self, root):
+        super().__init__(master=root)
+        self.label = tk.Label(self, text='hello')
+        self.label.pack()
+
+    def notify(self, message):
+        self.label.configure(text=message)    
 
 ####################### TKINTER EVENT MANAGER #######################
 
@@ -100,7 +107,7 @@ class EventHandler:
     @classmethod
     def onEmptySquareSelected(cls, event):
         print('touché')
-        if(cls.selectedSquare != None):
+        if(cls.selectedSquare != None and app.isPlayerTurn):
             cls.selectedPiece = {
                 'x': cls.selectedSquare.grid_info()['row'],
                 'y': cls.selectedSquare.grid_info()['column']
@@ -109,42 +116,45 @@ class EventHandler:
                 'x': event.widget.grid_info()['row'],
                 'y': event.widget.grid_info()['column']
             }
+            print('Sending movement to server')
+            sio.emit('move', json.dumps(selectedPiece, selectedEmpty))
 
 
-
-####################### SERVER CONNECTION MANAGER ######################################
+####################### SERVER CONNECTION MANAGER ######################
 
 # *  connection setup
 
 socket = socketio.Client()
-# connect to socket server
-socket.connect('http://localhost:5511')
 
 # * event handlers
-
 
 @socket.on('connect')
 def onConnect():
     print('You in!')
 
-
 @socket.on('disconnect')
 def onDisconnect():
     print('Oops, disconnected')
-
 
 @socket.on('playersetup')
 def onPlayerSetup(data):
     print('Congrats! You are player ' + str(json.loads(data)))
     global app
     app.setBoardProperty(json.loads(data))
-
+    app.infoLabel.notify('En attente d\'un joueur potentiel')
+    
 
 @socket.on('loadboard')
 def onloadboard(data):
     print('Found someone else to play. Loading game!')
     global app
     app.renderBoard(json.loads(data))
+
+@socket.on('playerturn')
+def onPlayerTurn(data):
+    print('playerturn: ' + str(json.loads(data)))
+    global app
+    app.setPlayerTurn(json.loads(data))
 
 
 # client server data communication
@@ -158,7 +168,7 @@ def onmessage(data):
     print(message.type)
 
 
-############### APPLICATION MANAGER ###############
+####################### APPLICATION MANAGER #######################
 
 class Theme:
 
@@ -177,11 +187,20 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('Damnier')
-        self.geometry('800x800')
+        self.geometry('800x820')
+        self.resizable(0, 0)
 
         # setup the grid layout manager
         self.rowconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
+
+        # setup turn management
+        self.isPlayerTurn = False
+
+        # display info label
+        self.infoLabel = InfoLabel(self)
+        self.infoLabel.grid(row=1, column=0)
+
 
     def setBoardProperty(self, playerValue):
         self.playerValue = playerValue
@@ -200,11 +219,24 @@ class App(tk.Tk):
             # player is player2 => black
             return Theme('#FD0002', '#010101', '#010101', '#FD0002', '#FFEB41')
 
+    def setPlayerTurn(self, turn):
+        self.isPlayerTurn = turn
+        if (self.isPlayerTurn):
+            self.infoLabel.notify('C\'est votre tour')
+        else:
+            self.infoLabel.notify('Tour de l\'adversaire')
+
 
 # * application init
 
-
 if __name__ == "__main__":
+
+    # launching app
     app = App()
+
+    # connecting to socket server
+    socket.connect('http://localhost:5511')
+
+    # looping tk
     app.mainloop()
 

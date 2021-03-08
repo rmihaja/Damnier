@@ -4,6 +4,7 @@ module.exports = class Game {
 
     constructor(size, initiator, guest) {
         this.board = new Board(size);
+        this.turn = 0
         this.player1 = {
             value: 1,
             socket: initiator,
@@ -19,6 +20,12 @@ module.exports = class Game {
         for (let player of this.players) {
             player.socket.emit('loadboard', this.board.getBoardLayout(player.value));
         }
+    }
+
+    incrementTurn() {
+        this.players[this.turn % 2].socket.emit('playerturn', JSON.stringify(true));
+        this.players[(this.turn + 1) % 2].socket.emit('playerturn', JSON.stringify(false))
+        this.turn++;
     }
 
     sendMessage(type, player, message) {
