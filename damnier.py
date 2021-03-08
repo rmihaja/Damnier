@@ -250,7 +250,11 @@ if __name__ == "__main__":
     app = App()
 
     # connecting to socket server
-    socket.connect('https://damnier.herokuapp.com/')
+    try:
+        socket.connect('https://damnier.herokuapp.com/')
+    except Exception:
+        print('Can\'t connect to remote server, connecting to local')
+        socket.connect('http://localhost:5500')
 
     # looping tk
     app.mainloop()
