@@ -13,9 +13,9 @@ module.exports = class Board {
             let piece;
             // check if boardRow belongs to players
             if (row < (size / 2) - 1) {
-                piece = 'O';  // ? O = opponent
+                piece = 2;  // ? 1 = player2 : default opponent / guest
             } else if (row > (size / 2)) {
-                piece = 'P';  // ? P = player
+                piece = 1;  // ? 2 = player1 : default player / initiator
             } else {
                 piece = 'E';  // ? E = empty : available square not occupied
             }
@@ -37,17 +37,19 @@ module.exports = class Board {
     }
 
     // return stringified array readable by python
-    getBoardLayout(isBlack) {
-        if(!isBlack)
+    getBoardLayout(playerValue) {
+        if(playerValue == 1)
         {
+            
             return JSON.stringify(this.layout);
         }
         else {
+            console.log('returning black', this.layout);
             return JSON.stringify(this.getBlackLayout());
         }
     }
 
-    // flip the board horizontally for player as opponent
+    // flip the board horizontally for player as player2
     getBlackLayout() {
         let blackLayout = this.layout;
         for (let i = 0; i < blackLayout.length; i++) {
