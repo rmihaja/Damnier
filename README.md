@@ -8,7 +8,7 @@ The player communications are made on top of [socket.io](https://socket.io/). It
 
 Download [the project file](https://github.com/Rmihaja/Damnier/archive/main.zip) and open a terminal in the downloaded folder directory.
 
-##### Using the preconfigured remote server
+### Using the preconfigured remote server
 
 A remote server has already been set up for the backend.
 
@@ -26,7 +26,7 @@ python damnier.py
 
 Note : You will have to look for another player or run two windows of the app to be able to initiate the game and play.
 
-##### Using a local server
+### Using a local server
 
 However if you want to run your own server, you will need [Node.js](https://nodejs.org/).
 
