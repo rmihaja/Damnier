@@ -162,8 +162,6 @@ class EventHandler:
             }
             print('Sending movement to server')
             socket.emit('move', json.dumps(movementProperty))
-            # reset selectedSquare
-            cls.selectedSquare = None
 
 ####################### SERVER CONNECTION MANAGER ######################
 

@@ -73,7 +73,7 @@ module.exports = class Board {
             return true;
         } 
         
-        if(this.canEat(deltaColumn)) {
+        if(this.canEat(deltaRow, deltaColumn)) {
             // delete opponent piece if author player can eat it
             let eatableSquareRow = pieceRow - 1 * Math.sign(deltaRow);
             let eatableSquareColumn = pieceColumn - 1 * Math.sign(deltaColumn);
@@ -104,8 +104,8 @@ module.exports = class Board {
         }
     }
 
-    canEat(deltaColumn) {
-        return Math.abs(deltaColumn) == 2;
+    canEat(deltaRow, deltaColumn) {
+        return Math.abs(deltaRow) == 2 && Math.abs(deltaColumn) == 2;
     }
 
     eatPiece(row, column) {
