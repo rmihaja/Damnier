@@ -41,28 +41,31 @@ module.exports = class Board {
         return JSON.stringify(this.layout);
     }
 
-    movePiece(playerPiece, initialRow, initialColumn, newRow, newColumn) {
+    movePiece(piece, initialRow, initialColumn, newRow, newColumn) {
         
         // swap square value
         this.layout[initialRow][initialColumn] = 'E';
 
-        queenValue = this.canUpgradeQueen(playerPiece, newRow);
+        // add '*' queen tag to piece layout data if piece can be a queen
+        let queenValue = this.canUpgradeQueen(piece, newRow);
 
-        this.layout[newRow][newColumn] = playerPiece + queenValue;
+        this.layout[newRow][newColumn] = piece + queenValue;
     }
 
-    tryMovement(author, piecePosition, emptyPosition) {
+    tryMovement(piecePosition, emptyPosition) {
         let pieceRow = piecePosition.row;
         let pieceColumn = piecePosition.column;
         let emptyRow = emptyPosition.row;
         let emptyColumn = emptyPosition.column;
 
+        let piece = this.layout[pieceRow][pieceColumn];
+
         let deltaRow = pieceRow - emptyRow;
         let deltaColumn = pieceColumn - emptyColumn;
 
         // move piece if empty square is qdjacent
-        if (this.canMove(author, deltaRow, deltaColumn)) {
-            this.movePiece(author, pieceRow, pieceColumn, emptyRow, emptyColumn);
+        if (this.canMove(piece, deltaRow, deltaColumn)) {
+            this.movePiece(piece, pieceRow, pieceColumn, emptyRow, emptyColumn);
             return true;
         } 
         
@@ -72,9 +75,9 @@ module.exports = class Board {
             let eatableSquareColumn = pieceColumn - 1 * Math.sign(deltaColumn);
             let eatableSquare = this.layout[eatableSquareRow][eatableSquareColumn];
             // check if the square is not empty and belongs to opponent so it can be eaten
-            if (eatableSquare != 'E' && eatableSquare != author) {
+            if (eatableSquare != 'E' && piece.charAt(0) != eatableSquare.charAt(0)) {
                 this.eatPiece(eatableSquareRow, eatableSquareColumn);
-                this.movePiece(author, pieceRow, pieceColumn, emptyRow, emptyColumn);
+                this.movePiece(piece, pieceRow, pieceColumn, emptyRow, emptyColumn);
                 return true;
             }
         }
@@ -83,31 +86,31 @@ module.exports = class Board {
 
     }
 
-    canUpgradeQueen(player, row) {
-        if (player.includes('1') && row == 0) {
-            // player1 reached opposite row 
-            return '*';
+    canUpgradeQueen(piece, row) {
+        // check if piece is already a queen
+        if (piece.includes('*')) {
+            return '';
         }
-        else if (player.includes('2') && row == this.layout.length - 1) {
-            // player2 reached opposite row
+        // check if player reached opposite row
+        if ((piece.includes('1') && row == 0) || (piece.includes('2') && row == this.layout.length - 1)) {
+             
             return '*';
         }
         else return ''
     }
 
-    canMove(player, deltaRow, deltaColumn) {
+    canMove(piece, deltaRow, deltaColumn) {
         
         // check if player move sideways
         if (Math.abs(deltaColumn) == 1) {
-            // check if player is queen, can move forward and backward
-            if (player.includes('*')) {
+            // check if piece is queen, can move forward and backward
+            if (piece.includes('*')) {
                 return true;
             }
-            if (player.includes('1')) {
+            if (piece.includes('1')) {
                 // player1 have to move forward on the layout
                 return deltaRow == 1;
-            } else if (player.includes('2')) {
-                // console.log(deltaRow);
+            } else if (piece.includes('2')) {
                 // player2 have to move backward on the layout
                 return deltaRow == -1;
             }

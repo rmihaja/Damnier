@@ -35,22 +35,22 @@ class Board(tk.Frame):
                     square = self.createSquare(squareValue, row, column)
 
                     # flip layout filling if the player is player2 for first pov
-                    if (self.playerValue == 2):
+                    if (self.playerValue == '2'):
                         square.grid(row=self.size - row,
                                     column=self.size - column)
                     else:
                         square.grid(row=row, column=column)
 
-    def createSquare(self, value, rowPosition, columnPosition):
-        if ('E' in value):
+    def createSquare(self, pieceValue, rowPosition, columnPosition):
+        if ('E' in pieceValue):
             return EmptySquare(self, self.squareSize,
                                self.theme.squareColor, rowPosition, columnPosition)
-        elif (self.playerValue in value):
-            return PlayerSquare(self, self.squareSize, self.theme.squareColor,
+        elif (self.playerValue in pieceValue):
+            return PlayerSquare(self, self.squareSize, self.theme.squareColor, pieceValue,
                                 self.theme.playerColor, self.theme.selectedPieceColor, rowPosition, columnPosition)
         else:
             # square is automatically for the opponent
-            return OpponentSquare(self, self.squareSize, self.theme.squareColor,
+            return OpponentSquare(self, self.squareSize, self.theme.squareColor, pieceValue,
                                   self.theme.opponentColor, rowPosition, columnPosition)
 
 
@@ -67,23 +67,48 @@ class Square(tk.Canvas):
 
 class Piece():
 
-    def __init__(self, square, squareSize, color, selectedColor):
-        self.shape = square.create_oval(self.getCorners(squareSize),
-                                        fill=color, outline='white', width=3)
+    def __init__(self, squareParent, parentSize, value, color, selectedColor):
+        self.shape = squareParent.create_oval(self.getPieceCorners(parentSize),
+                                              fill=color, outline='white', width=3)
+
+        # add queen overlay if piece is a queen
+        if ('*' in value):
+            squareParent.create_line(self.getCrownCorners(
+                parentSize, (35, 65), (30, 40), (40, 45), 35), fill='white', width=3)
 
         # if selectedColor is set, piece belongs to player and is selectable
         if (selectedColor != None):
             self.color = color
             self.selectedColor = selectedColor
             # piece click event listener
-            square.tag_bind(self.shape, '<ButtonPress-1>',
-                            EventHandler.onPlayerSquareSelected)
+            squareParent.tag_bind(self.shape, '<ButtonPress-1>',
+                                  EventHandler.onPlayerSquareSelected)
 
     # getting canvas.create_oval points
-    def getCorners(self, squareSize):
+    def getPieceCorners(self, squareSize):
         topLeftPoint = 0.1 * squareSize, 0.1 * squareSize
         bottomLeftPoint = 0.9 * squareSize, 0.9 * squareSize
         return (topLeftPoint, bottomLeftPoint)
+
+    # getting queen crown shape
+    def getCrownCorners(self, parentSize, bottomLeftPoint, outterLeftPoint, innerLeftPoint, ycenter):
+        xA, yA = bottomLeftPoint
+        xB, yB = outterLeftPoint
+        xC, yC = innerLeftPoint
+
+        A = xA, yA
+        B = xB, yB
+        C = xC, yC
+
+        M = parentSize / 2, ycenter
+
+        # mirroring left points for symetry
+        # ? a queen crown is symetric on the y axis
+        primeC = parentSize - C[0], C[1]
+        primeB = parentSize - B[0], B[1]
+        primeA = parentSize - A[0], A[1]
+
+        return (A, B, C, M, primeC, primeB, primeA, A)
 
 
 class EmptySquare(Square):
@@ -96,16 +121,17 @@ class EmptySquare(Square):
 
 class OpponentSquare(Square):
 
-    def __init__(self, root, size, squareColor, pieceColor, row, column):
+    def __init__(self, root, size, squareColor, pieceValue, pieceColor, row, column):
         super().__init__(root, size, squareColor, row, column)
-        self.piece = Piece(self, size, pieceColor, None)
+        self.piece = Piece(self, size, pieceValue, pieceColor, None)
 
 
 class PlayerSquare(Square):
 
-    def __init__(self, root, size, squareColor, pieceColor, selectedPieceColor, row, column):
+    def __init__(self, root, size, squareColor, pieceValue, pieceColor, selectedPieceColor, row, column):
         super().__init__(root, size, squareColor, row, column)
-        self.piece = Piece(self, size, pieceColor, selectedPieceColor)
+        self.piece = Piece(self, size, pieceValue,
+                           pieceColor, selectedPieceColor)
 
 
 class InfoLabel(tk.Frame):
@@ -156,7 +182,6 @@ class EventHandler:
                 'column': event.widget.column
             }
             movementProperty = {
-                'playerValue': app.playerValue,
                 'piecePosition': selectedPiece,
                 'emptyPosition': selectedEmpty
             }
@@ -255,7 +280,7 @@ class App(tk.Tk):
 
     # TODO : add custom theme
     def setTheme(self, playerValue):
-        if (playerValue == 1):
+        if (playerValue == '1'):
             # player is player1 => initial colors
             return Theme('#FFF', '#010101', '#FD0002', '#010101', '#FFEB41')
         else:
@@ -271,7 +296,6 @@ class App(tk.Tk):
 
 
 # * application init
-
 if __name__ == "__main__":
 
     # launching app

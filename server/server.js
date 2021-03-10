@@ -26,7 +26,7 @@ io.on('connection', socket => {
     // * event emitters
 
     // send player value if player'1' or '2'
-    socket.emit('playersetup', JSON.stringify(waitingRoom.length))
+    socket.emit('playersetup', JSON.stringify(waitingRoom.length.toString()))
     
     // initiate game when 2 player are connected
     if (waitingRoom.length == 2) {
