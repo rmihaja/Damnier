@@ -9,15 +9,20 @@ from collections import namedtuple
 class Board(tk.Frame):
 
     def __init__(self, root, layout, playerValue, theme):
-        self.playerValue = playerValue
+
+        # Board Frame value
         self.length = 800
         self.theme = theme
         super().__init__(master=root, height=self.length,
                          width=self.length, bg=self.theme.boardColor)
+
         # board data from server
         self.layout = layout
         self.size = len(layout[0])
         self.squareSize = self.length / self.size
+
+        # player value : player1 or player2
+        self.playerValue = playerValue
 
         # filling the board with canvases
         self.__create_widgets()
@@ -27,30 +32,55 @@ class Board(tk.Frame):
             for column in range(self.size):
                 squareValue = self.layout[row][column]
                 if (squareValue != ''):
-                    square = self.createSquare(squareValue)
-                    square.grid(row=row, column=column)
+                    square = self.createSquare(squareValue, row, column)
 
-    def createSquare(self, value):
+                    # flip layout filling if the player is player2 for first pov
+                    if (self.playerValue == 2):
+                        square.grid(row=self.size - row,
+                                    column=self.size - column)
+                    else:
+                        square.grid(row=row, column=column)
+
+    def createSquare(self, value, rowPosition, columnPosition):
         if (value == 'E'):
             return EmptySquare(self, self.squareSize,
-                               self.theme.squareColor)
+                               self.theme.squareColor, rowPosition, columnPosition)
         elif (value == self.playerValue):
             return PlayerSquare(self, self.squareSize, self.theme.squareColor,
-                                self.theme.playerColor, self.theme.selectedPieceColor)
+                                self.theme.playerColor, self.theme.selectedPieceColor, rowPosition, columnPosition)
         else:
             # square is automatically for the opponent
             return OpponentSquare(self, self.squareSize, self.theme.squareColor,
-                                  self.theme.opponentColor)
+                                  self.theme.opponentColor, rowPosition, columnPosition)
 
 
 class Square(tk.Canvas):
 
-    def __init__(self, root, size, color):
+    def __init__(self, root, size, color, row, column):
         # ? bd removes Canvas default margin
-        super().__init__(master=root, width=size, height=size, bg=color, bd=-2)
+        super().__init__(master=root, width=size, height=size,
+                         bg=color, bd=-2, highlightbackground=color)
 
-    @staticmethod
-    def getPieceCorners(squareSize):
+        self.row = row
+        self.column = column
+
+
+class Piece():
+
+    def __init__(self, square, squareSize, color, selectedColor):
+        self.shape = square.create_oval(self.getCorners(squareSize),
+                                        fill=color, outline='white', width=3)
+
+        # if selectedColor is set, piece belongs to player and is selectable
+        if (selectedColor != None):
+            self.color = color
+            self.selectedColor = selectedColor
+            # piece click event listener
+            square.tag_bind(self.shape, '<ButtonPress-1>',
+                            EventHandler.onPlayerSquareSelected)
+
+    # getting canvas.create_oval points
+    def getCorners(self, squareSize):
         topLeftPoint = 0.1 * squareSize, 0.1 * squareSize
         bottomLeftPoint = 0.9 * squareSize, 0.9 * squareSize
         return (topLeftPoint, bottomLeftPoint)
@@ -58,36 +88,34 @@ class Square(tk.Canvas):
 
 class EmptySquare(Square):
 
-    def __init__(self, root, size, squareColor):
-        super().__init__(root, size, squareColor)
+    def __init__(self, root, size, squareColor, row, column):
+        super().__init__(root, size, squareColor, row, column)
+        # empty square click event listener
         self.bind("<Button-1>", EventHandler.onEmptySquareSelected)
 
 
 class OpponentSquare(Square):
 
-    def __init__(self, root, size, squareColor, pieceColor):
-        super().__init__(root, size, squareColor)
-        self.piece = self.create_oval(Square.getPieceCorners(
-            size), fill=pieceColor, outline='white', width=3)
+    def __init__(self, root, size, squareColor, pieceColor, row, column):
+        super().__init__(root, size, squareColor, row, column)
+        self.piece = Piece(self, size, pieceColor, None)
 
 
-class PlayerSquare(OpponentSquare):
+class PlayerSquare(Square):
 
-    def __init__(self, root, size, squareColor, pieceColor, selectedPieceColor):
-        super().__init__(root, size, squareColor, pieceColor)
-        self.pieceColor = pieceColor
-        self.selectedPieceColor = selectedPieceColor
-        self.bind(
-            "<Button-1>", EventHandler.onPlayerSquareSelected)
+    def __init__(self, root, size, squareColor, pieceColor, selectedPieceColor, row, column):
+        super().__init__(root, size, squareColor, row, column)
+        self.piece = Piece(self, size, pieceColor, selectedPieceColor)
 
 
 class InfoLabel(tk.Frame):
 
     def __init__(self, root):
         super().__init__(master=root)
-        self.label = tk.Label(self, text='hello')
+        self.label = tk.Label(self)
         self.label.pack()
 
+    # display given message to user
     def notify(self, message):
         self.label.configure(text=message)
 
@@ -97,27 +125,35 @@ class InfoLabel(tk.Frame):
 class EventHandler:
 
     selectedSquare = None
+    selectedPiece = None
 
     @classmethod
     def onPlayerSquareSelected(cls, event):
-        if (cls.selectedSquare != None):
+        # check if there is already a selected piece
+        if (cls.selectedSquare != None and cls.selectedPiece != None):
+            # reset previous selected piece
             cls.selectedSquare.itemconfigure(
-                cls.selectedSquare.piece, fill=cls.selectedSquare.pieceColor)
+                cls.selectedPiece, fill=cls.selectedSquare.piece.color)
+
+        # storing canvas event info
         cls.selectedSquare = event.widget
+        cls.selectedPiece = cls.selectedSquare.find_closest(event.x, event.y)
+
+        # highliting selected piece with theme color
         cls.selectedSquare.itemconfigure(
-            cls.selectedSquare.piece, fill=cls.selectedSquare.selectedPieceColor)
+            cls.selectedPiece, fill=cls.selectedSquare.piece.selectedColor)
 
     @classmethod
     def onEmptySquareSelected(cls, event):
         # send movement position value if a piece is selected and it is the player's turn
         if((cls.selectedSquare != None) and (app.isPlayerTurn)):
             selectedPiece = {
-                'row': cls.selectedSquare.grid_info()['row'],
-                'column': cls.selectedSquare.grid_info()['column']
+                'row': cls.selectedSquare.row,
+                'column': cls.selectedSquare.column
             }
             selectedEmpty = {
-                'row': event.widget.grid_info()['row'],
-                'column': event.widget.grid_info()['column']
+                'row': event.widget.row,
+                'column': event.widget.column
             }
             movementProperty = {
                 'playerValue': app.playerValue,
@@ -131,22 +167,29 @@ class EventHandler:
 
 ####################### SERVER CONNECTION MANAGER ######################
 
-# *  connection setup
-
 
 socket = socketio.Client()
 
 # * event handlers
+
+#  connection events
+
+
+# player is connected to socket server
 
 
 @socket.on('connect')
 def onConnect():
     print('You in!')
 
+# player get connected to socket server
+
 
 @socket.on('disconnect')
 def onDisconnect():
     print('Oops, disconnected')
+
+#  game events
 
 
 @socket.on('playersetup')
@@ -167,17 +210,6 @@ def onloadboard(data):
 def onPlayerTurn(data):
     global app
     app.setPlayerTurn(json.loads(data))
-
-
-# client server data communication
-
-@socket.on('message')
-def onmessage(data):
-    # convert JSON data into object with attributes corresponding to dict keys
-    message = json.loads(data, object_hook=lambda d: namedtuple(
-        'message', d.keys())(*d.values()))
-    print(message)
-    print(message.type)
 
 
 ####################### APPLICATION MANAGER #######################
@@ -227,11 +259,11 @@ class App(tk.Tk):
         if (playerValue == 1):
             self.playerColor = 'rouge'
             # player is player1 => red
-            return Theme('#FD0002', '#010101', '#FD0002', '#010101', '#FFEB41')
+            return Theme('#FFF', '#010101', '#FD0002', '#010101', '#FFEB41')
         else:
             self.playerColor = 'noir'
             # player is player2 => black
-            return Theme('#FD0002', '#010101', '#010101', '#FD0002', '#FFEB41')
+            return Theme('#FFF', '#010101', '#010101', '#FD0002', '#FFEB41')
 
     def setPlayerTurn(self, turn):
         self.isPlayerTurn = turn
