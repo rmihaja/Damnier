@@ -1,10 +1,10 @@
 import tkinter as tk
 import socketio
 import json
-from collections import namedtuple
 
 
 ####################### TKINTER BOARD MANAGER #######################
+
 
 class Board(tk.Frame):
 
@@ -42,10 +42,10 @@ class Board(tk.Frame):
                         square.grid(row=row, column=column)
 
     def createSquare(self, value, rowPosition, columnPosition):
-        if (value == 'E'):
+        if ('E' in value):
             return EmptySquare(self, self.squareSize,
                                self.theme.squareColor, rowPosition, columnPosition)
-        elif (value == self.playerValue):
+        elif (self.playerValue in value):
             return PlayerSquare(self, self.squareSize, self.theme.squareColor,
                                 self.theme.playerColor, self.theme.selectedPieceColor, rowPosition, columnPosition)
         else:
@@ -163,6 +163,7 @@ class EventHandler:
             print('Sending movement to server')
             socket.emit('move', json.dumps(movementProperty))
 
+
 ####################### SERVER CONNECTION MANAGER ######################
 
 
@@ -255,21 +256,18 @@ class App(tk.Tk):
     # TODO : add custom theme
     def setTheme(self, playerValue):
         if (playerValue == 1):
-            self.playerColor = 'rouge'
-            # player is player1 => red
+            # player is player1 => initial colors
             return Theme('#FFF', '#010101', '#FD0002', '#010101', '#FFEB41')
         else:
-            self.playerColor = 'noir'
-            # player is player2 => black
+            # player is player2 => swap player colors
             return Theme('#FFF', '#010101', '#010101', '#FD0002', '#FFEB41')
 
     def setPlayerTurn(self, turn):
         self.isPlayerTurn = turn
-        playerStatusInfo = 'Vous êtes ' + self.playerColor
         if (self.isPlayerTurn):
-            self.infoLabel.notify('C\'est votre tour! ' + playerStatusInfo)
+            self.infoLabel.notify('C\'est votre tour! ')
         else:
-            self.infoLabel.notify('Tour de l\'adversaire. ' + playerStatusInfo)
+            self.infoLabel.notify('Tour de l\'adversaire. ')
 
 
 # * application init
@@ -279,6 +277,7 @@ if __name__ == "__main__":
     # launching app
     app = App()
 
+    # TODO: Add server class
     # connecting to socket server
     try:
         socket.connect('http://localhost:5500')
@@ -291,5 +290,5 @@ if __name__ == "__main__":
             app.infoLabel.notify(
                 'Erreur: Impossible de se connecter au serveur. Veuillez redémarrer')
 
-    # looping tk
+    # firing endless loop
     app.mainloop()

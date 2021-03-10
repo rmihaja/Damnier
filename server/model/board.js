@@ -13,9 +13,9 @@ module.exports = class Board {
             let piece;
             // check if boardRow belongs to players
             if (row < (size / 2) - 1) {
-                piece = 2;  // ? 1 = player2 : default opponent / guest
+                piece = '2';  // ? 1 = player2 : default opponent / guest
             } else if (row > (size / 2)) {
-                piece = 1;  // ? 2 = player1 : default player / initiator
+                piece = '1';  // ? 2 = player1 : default player / initiator
             } else {
                 piece = 'E';  // ? E = empty : available square not occupied
             }
@@ -41,21 +41,14 @@ module.exports = class Board {
         return JSON.stringify(this.layout);
     }
 
-    // TODO : use this feature
-    // flip the board horizontally for player as player2
-    flipLayout(layout) {
-        let flippedLayout = layout;
-        for (let i = 0; i < flippedLayout.length; i++) {
-            flippedLayout[i].reverse(); // ? reverse each row
-        }
-        return flippedLayout.reverse() // ? reverse column before return
-    }
-
     movePiece(playerPiece, initialRow, initialColumn, newRow, newColumn) {
         
         // swap square value
         this.layout[initialRow][initialColumn] = 'E';
-        this.layout[newRow][newColumn] = playerPiece;
+
+        queenValue = this.canUpgradeQueen(playerPiece, newRow);
+
+        this.layout[newRow][newColumn] = playerPiece + queenValue;
     }
 
     tryMovement(author, piecePosition, emptyPosition) {
@@ -90,13 +83,30 @@ module.exports = class Board {
 
     }
 
+    canUpgradeQueen(player, row) {
+        if (player.includes('1') && row == 0) {
+            // player1 reached opposite row 
+            return '*';
+        }
+        else if (player.includes('2') && row == this.layout.length - 1) {
+            // player2 reached opposite row
+            return '*';
+        }
+        else return ''
+    }
+
     canMove(player, deltaRow, deltaColumn) {
+        
         // check if player move sideways
-        if(Math.abs(deltaColumn) == 1) {
-            if (player == 1) {
+        if (Math.abs(deltaColumn) == 1) {
+            // check if player is queen, can move forward and backward
+            if (player.includes('*')) {
+                return true;
+            }
+            if (player.includes('1')) {
                 // player1 have to move forward on the layout
                 return deltaRow == 1;
-            } else if (player == 2) {
+            } else if (player.includes('2')) {
                 // console.log(deltaRow);
                 // player2 have to move backward on the layout
                 return deltaRow == -1;
