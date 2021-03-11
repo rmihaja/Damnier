@@ -138,7 +138,7 @@ module.exports = class Board {
                         console.log(`                   Square has passed value == E test with value of ${this.layout[row][column]}`)
                         let capturableSquare = this.getInBetweenSquare(pieceRow, pieceColumn, deltaRow, deltaColumn);
                         if (this.canCapture(capturableSquare.value, piece)) {
-                            console.log(`RESULT: player can move to (${row},${column}) while eating the piece at (${capturableSquare.row},${capturableSquare.column}) own by ${capturableSquare.value}` )
+                            console.log(`\nRESULT: player can move to (${row},${column}) while eating the piece at (${capturableSquare.row},${capturableSquare.column}) own by ${capturableSquare.value}` )
                             console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n`);
                             return true;   
                         }
