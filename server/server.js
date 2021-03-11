@@ -33,7 +33,7 @@ io.on('connection', socket => {
         game = new Game(8, waitingRoom[0], waitingRoom[1]);
         waitingRoom = [];
         game.updatePlayersBoard();
-        console.log('Game started !')
+        console.log('Game started!')
         console.log(`There are now ${waitingRoom.length} waiting`)
         game.incrementTurn();
     }

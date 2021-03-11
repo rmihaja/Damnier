@@ -185,8 +185,15 @@ class EventHandler:
                 'piecePosition': selectedPiece,
                 'emptyPosition': selectedEmpty
             }
-            print('Sending movement to server')
-            socket.emit('move', json.dumps(movementProperty))
+
+            # sending data to server if one of the farvest allowed movement (2 squares difference)
+            # * specific, detailed move validation is operated by the server
+            deltaRow = abs(selectedPiece['row'] - selectedEmpty['row'])
+            deltaColumn = abs(
+                selectedPiece['column'] - selectedEmpty['column'])
+            if(deltaRow in range(1, 3) and deltaColumn in range(1, 3)):
+                print('Sending movement to server')
+                socket.emit('move', json.dumps(movementProperty))
 
 
 ####################### SERVER CONNECTION MANAGER ######################
@@ -225,7 +232,7 @@ def onPlayerSetup(data):
 
 
 @socket.on('loadboard')
-def onloadboard(data):
+def onLoadboard(data):
     global app
     app.renderBoard(json.loads(data))
 
@@ -234,6 +241,12 @@ def onloadboard(data):
 def onPlayerTurn(data):
     global app
     app.setPlayerTurn(json.loads(data))
+
+
+@socket.on('captureopponent')
+def onCaptureOpponent():
+    print('Gotta capture another piece to end your turn!')
+    app.infoLabel.notify('C\'est votre tour! Vous pouvez encore mangez!')
 
 
 ####################### APPLICATION MANAGER #######################

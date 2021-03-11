@@ -5,42 +5,31 @@ module.exports = class Game {
     constructor(size, initiator, guest) {
         this.board = new Board(size);
         this.turn = 0;
-        this.player1 = {
-            value: 1,
-            socket: initiator,
-        };
-        this.player2 = {
-            value: 2,
-            socket: guest,
-        };
-        this.players = [this.player1, this.player2];
+        this.players = [initiator, guest];
     }
 
     updatePlayersBoard() {
         for (let player of this.players) {
-            player.socket.emit('loadboard', this.board.getBoardLayout(player.value));
+            player.emit('loadboard', this.board.getBoardLayout(player.value));
         }
     }
 
     incrementTurn() {
-        this.players[this.turn % 2].socket.emit('playerturn', JSON.stringify(true));
-        this.players[(this.turn + 1) % 2].socket.emit('playerturn', JSON.stringify(false))
+        this.players[this.turn % 2].emit('playerturn', JSON.stringify(true));
+        this.players[(this.turn + 1) % 2].emit('playerturn', JSON.stringify(false))
         this.turn++;
     }
 
-    sendMessage(type, player, message) {
-        let messageData = {
-            type: type,
-            message: message
-        };
-        player.socket.emit('message', JSON.stringify(messageData));
-    }
-
     onPlayerMove(movement) {
-        let isValidMovement = this.board.tryMovement(movement.piecePosition, movement.emptyPosition)
-        if (isValidMovement) {
+        let performedMovement = this.board.tryMovement(movement.piecePosition, movement.emptyPosition)
+        if (performedMovement != null) {
             this.updatePlayersBoard();
-            this.incrementTurn();
+            if (performedMovement == 'capture' && this.board.canMultipleCapture(movement.emptyPosition)) {
+                // after capture, player piece is now positionned on previous empty
+                let player = this.board.getSquarePlayer(movement.emptyPosition);
+                this.players[parseInt(player) - 1].emit('captureopponent');
+            }
+            else this.incrementTurn();
         }
 
     }
