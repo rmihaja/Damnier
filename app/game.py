@@ -1,5 +1,6 @@
 import tkinter as tk
 import math as math
+from tkinter import Event, font
 import socketio
 import json
 
@@ -350,23 +351,27 @@ class App(tk.Tk):
 
         # setup the grid layout manager
         self.rowconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
 
         # setup turn management
         self.isPlayerTurn = False
 
-        # display info label
+        # init home + info label
+        self.__create_widgets()
+
+    def __create_widgets(self):
+        self.home = Home(self)
         self.infoLabel = InfoLabel(self)
-        self.infoLabel.grid(row=1, column=0)
 
-        # setup the game type (local for now)
+        self.home.grid(row=0, column=0, sticky='')
+        self.infoLabel.grid(row=1, column=0, sticky='')
 
+    def createLocalGame(self):
         self.isLocalGame = True
+        self.board = Board(8)
         self.setPlayerProperty('1')
         self.setPlayerTurn('1')
-        self.board = Board(8)
         self.renderBoard(self.board.getBoardLayout())
-        print('board OK')
         self.isPlayerTurn = True
 
     def setPlayerProperty(self, playerValue):
@@ -411,13 +416,42 @@ class App(tk.Tk):
             self.renderBoard(self.board.getBoardLayout())
 
 
+class Home(tk.Frame):
+
+    def __init__(self, root):
+
+        # Home Frame value
+        self.length = 800
+        super().__init__(master=root, height=self.length, width=self.length)
+
+        self.__create_widgets()
+
+    def __create_widgets(self):
+        self.title = tk.Label(
+            self, text='Welcome to Damnier!', font='Arial 30 bold')
+        self.newOfflineMultiGame = tk.Button(
+            self, text='Nouvelle partie multijoueur local', command=EventHandler.onNewOfflineMultiGame)
+        self.newOnlineMultiGame = tk.Button(
+            self, text='Nouvelle partie multijoueur en ligne', command=EventHandler.onNewOnlineMultiGame)
+
+        # packing the buttons
+        self.title.pack()
+        self.newOfflineMultiGame.pack()
+        self.newOnlineMultiGame.pack()
+
+
 ####################### TKINTER EVENT MANAGER #######################
 
 
 class EventHandler:
 
+    # variable init
+
+    socket = None
     selectedSquare = None
     selectedPiece = None
+
+    # game event
 
     @ classmethod
     def onPlayerSquareSelected(cls, event):
@@ -462,76 +496,83 @@ class EventHandler:
                 if(app.isLocalGame):
                     app.onPlayerMove(movementProperty)
                 else:
-                    socket.emit('move', json.dumps(movementProperty))
+                    cls.socket.emit('move', json.dumps(movementProperty))
+
+    # home event
+
+    @classmethod
+    def onNewOfflineMultiGame(cls):
+        app.createLocalGame()
+
+    @classmethod
+    def onNewOnlineMultiGame(cls):
+        app.isLocalGame = False
+
+        if(cls.socket == None):
+            cls.socket = socketio.Client()
+
+            # TODO: Add server class
+            # connecting to socket server
+            try:
+                cls.socket.connect('http://localhost:5500')
+            except Exception:
+                try:
+                    print('No local server found, connecting to remote')
+                    cls.socket.connect('https://damnier.herokuapp.com/')
+                except Exception as error:
+                    print('Can\'t connect to remote server:', error)
+                    app.infoLabel.notify(
+                        'Erreur: Impossible de se connecter au serveur')
+                    cls.socket = None
+
+        # * event handlers
+
+        #  connection events
+
+        # player is connected to socket server
+
+        @cls.socket.on('connect')
+        def onConnect():
+            print('You in!')
+
+        # player get connected to socket server
+
+        @cls.socket.on('disconnect')
+        def onDisconnect():
+            print('Oops, disconnected')
+
+        #  game events
+
+        @cls.socket.on('playersetup')
+        def onPlayerSetup(data):
+            print('Congrats! You are player ' + str(json.loads(data)))
+            global app
+            app.setPlayerProperty(json.loads(data))
+            app.infoLabel.notify('En attente d\'un joueur potentiel')
+
+        @cls.socket.on('loadboard')
+        def onLoadboard(data):
+            global app
+            app.renderBoard(json.loads(data))
+
+        @cls.socket.on('playerturn')
+        def onPlayerTurn(data):
+            global app
+            app.setPlayerTurn(json.loads(data))
+
+        @cls.socket.on('captureopponent')
+        def onCaptureOpponent():
+            print('Gotta capture another piece to end your turn!')
+            app.infoLabel.notify(
+                'C\'est votre tour! Vous pouvez encore mangez!')
 
 
 ####################### SERVER CONNECTION MANAGER ######################
-socket = socketio.Client()
-
-# * event handlers
-
-#  connection events
-
-
-# player is connected to socket server
-@ socket.on('connect')
-def onConnect():
-    print('You in!')
-
-# player get connected to socket server
-
-
-@ socket.on('disconnect')
-def onDisconnect():
-    print('Oops, disconnected')
-
-#  game events
-
-
-@ socket.on('playersetup')
-def onPlayerSetup(data):
-    print('Congrats! You are player ' + str(json.loads(data)))
-    global app
-    app.setPlayerProperty(json.loads(data))
-    app.infoLabel.notify('En attente d\'un joueur potentiel')
-
-
-@ socket.on('loadboard')
-def onLoadboard(data):
-    global app
-    app.renderBoard(json.loads(data))
-
-
-@ socket.on('playerturn')
-def onPlayerTurn(data):
-    global app
-    app.setPlayerTurn(json.loads(data))
-
-
-@ socket.on('captureopponent')
-def onCaptureOpponent():
-    print('Gotta capture another piece to end your turn!')
-    app.infoLabel.notify('C\'est votre tour! Vous pouvez encore mangez!')
-
-
 # * application init
 if __name__ == "__main__":
 
     # launching app
     app = App()
-
-    # TODO: Add server class
-    # connecting to socket server
-    # try:
-    #     socket.connect('http://localhost:5500')
-    # except Exception:
-    #     try:
-    #         print('No local server found, connecting to remote')
-    #         socket.connect('https://damnier.herokuapp.com/')
-    #     except Exception as error:
-    #         print('Can\'t connect to remote server:', error)
-    #         app.infoLabel.notify(
-    #             'Erreur: Impossible de se connecter au serveur. Veuillez redémarrer')
 
     # firing endless loop
     app.mainloop()

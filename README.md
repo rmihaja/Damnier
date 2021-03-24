@@ -18,10 +18,10 @@ To launch the client, install socket.io dependency first :
 pip install "python-socketio[client]"
 ```
 
-Then run damnier.py (assuming you have a python environment on your machine) :
+Then run game.py (assuming you have a python 3 environment on your machine) :
 
 ```
-python damnier.py
+python ./app/damnier.py
 ```
 
 Note : You will have to look for another player or run two windows of the app to be able to initiate the game and play.
