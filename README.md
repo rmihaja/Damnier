@@ -6,7 +6,7 @@ Simple checkers game made with Python and Tkinter for my Python Project course.
 
 The player communications are made on top of [socket.io](https://socket.io/). It is the only dependency of both client and server.
 
-Download [the project file](https://github.com/Rmihaja/Damnier/archive/main.zip) and open a terminal in the downloaded folder directory.
+Download [the project files](https://github.com/Rmihaja/Damnier/archive/main.zip) and open a terminal in the downloaded folder directory.
 
 ### Using the preconfigured remote server
 
@@ -21,7 +21,7 @@ pip install "python-socketio[client]"
 Then run game.py (assuming you have a python 3 environment on your machine) :
 
 ```
-python ./app/damnier.py
+python ./app/game.py
 ```
 
 Note : You will have to look for another player or run two windows of the app to be able to initiate the game and play.
