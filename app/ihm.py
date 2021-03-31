@@ -91,7 +91,7 @@ class PlayerSquare(Square):
 
 class Game(tk.Frame):
 
-    def __init__(self, root, length, isLocal, eventHandler, playerValue, theme):
+    def __init__(self, root, length, isLocal, eventHandler, theme):
 
         # Board Frame value
         self.length = length
@@ -99,12 +99,17 @@ class Game(tk.Frame):
         super().__init__(master=root, height=self.length,
                          width=self.length, bg=self.theme.boardColor)
 
-        # player value : player1 or player2
-        self.playerValue = playerValue
+        # game state
         self.isLocalGame = isLocal
 
         # event handler to pass to controller
         self.eventHandler = eventHandler
+
+    def setPlayerValues(self, playerValue, playerTheme):
+        # player value : player1 or player2
+        self.playerValue = playerValue
+        self.theme = playerTheme
+        
 
     def createBoardSquares(self, layout):
         # board config
@@ -119,7 +124,7 @@ class Game(tk.Frame):
                         squareValue, row, column, self.eventHandler)
 
                     # flip layout filling if the player is player2 for first pov
-                    if (self.playerValue == '2' and not(self.isLocalGame)):
+                    if (self.isLocalGame == False and self.playerValue == '2'):
                         square.grid(row=self.boardSize - row,
                                     column=self.boardSize - column)
                     else:

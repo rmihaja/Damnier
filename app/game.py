@@ -81,18 +81,13 @@ class EventHandler:
                 'emptyPosition': selectedEmpty
             }
 
-            # sending data to server if one of the farvest allowed movement (2 squares difference)
-            # * specific, detailed move validation is operated by the server
-            deltaRow = abs(selectedPiece['row'] - selectedEmpty['row'])
-            deltaColumn = abs(
-                selectedPiece['column'] - selectedEmpty['column'])
-            if(deltaRow in range(1, 3) and deltaColumn in range(1, 3)):
-                print('Sending movement to model')
-                if(self.app.isLocalGame):
-                    self.app.onPlayerMove(movementProperty)
-                else:
-                    self.serverConnection.socket.emit(
-                        'move', json.dumps(movementProperty))
+            # sending movement data to model/server for validation 
+            print('Sending movement to model')
+            if(self.app.isLocalGame):
+                self.app.onPlayerMove(movementProperty)
+            else:
+                self.serverConnection.socket.emit(
+                    'move', json.dumps(movementProperty))
 
     # home event
 
@@ -215,8 +210,8 @@ class App(tk.Tk):
         print('player value set')
 
     def createGame(self):
-        self.game = Game(self, self.width, self.isLocalGame, self.eventHandler,
-                         self.playerValue, self.theme)
+        self.game = Game(self, self.width, self.isLocalGame, self.eventHandler, self.theme)
+        self.game.setPlayerValues(self.playerValue, self.theme)
         self.game.grid(row=0, column=0)
         print('game created')
 
@@ -259,6 +254,7 @@ class App(tk.Tk):
             else:
                 self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
                 self.setPlayerTurn(self.playerValue)
+                self.game.setPlayerValues(self.playerValue, self.theme)
 
             self.renderBoard(self.board.getBoardLayout())
 

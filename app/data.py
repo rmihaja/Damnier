@@ -38,52 +38,6 @@ class Board():
     def getBoardLayout(self):
         return self.layout
 
-    def movePiece(self, piece, initialRow, initialColumn, newRow, newColumn):
-        # swap square value
-        self.layout[initialRow][initialColumn] = 'E'
-
-        # add '*' queen tag to piece layout data if piece can be a queen
-        queenValue = self.canUpgradeQueen(piece, newRow)
-
-        self.layout[newRow][newColumn] = piece + queenValue
-
-    def capturePiece(self, row, column):
-        # replace square value to empty
-        self.layout[row][column] = 'E'
-
-    def tryMovement(self, piecePosition, emptyPosition):
-        pieceRow = piecePosition['row']
-        pieceColumn = piecePosition['column']
-        emptyRow = emptyPosition['row']
-        emptyColumn = emptyPosition['column']
-
-        piece = self.layout[pieceRow][pieceColumn]
-
-        deltaRow = emptyRow - pieceRow
-        deltaColumn = emptyColumn - pieceColumn
-
-        # * simple move
-
-        if (self.canMove(piece, deltaRow, deltaColumn)):
-            self.movePiece(piece, pieceRow, pieceColumn, emptyRow, emptyColumn)
-            return 'move'
-
-        # * move and capture
-
-        # get square in the middle of empty and piece
-        capturableSquare = self.getInBetweenSquare(
-            pieceRow, pieceColumn, deltaRow, deltaColumn)
-        # check if the square is not empty and belongs to opponent so it can be captured
-        if (self.canCapture(capturableSquare['value'], piece)):
-            self.capturePiece(
-                capturableSquare['row'], capturableSquare['column'])
-            # move piece if move captures opponent piece
-            self.movePiece(piece, pieceRow, pieceColumn, emptyRow, emptyColumn)
-            return 'capture'
-
-        # * invalid move
-        return None
-
     def getSquarePlayer(self, piecePosition):
         squarePlayer = self.layout[piecePosition['row']
                                    ][piecePosition['column']]
@@ -103,6 +57,19 @@ class Board():
 
         print('the potential square to eat is ', square)
         return square
+
+    def movePiece(self, piece, initialRow, initialColumn, newRow, newColumn):
+        # swap square value
+        self.layout[initialRow][initialColumn] = 'E'
+
+        # add '*' queen tag to piece layout data if piece can be a queen
+        queenValue = self.canUpgradeQueen(piece, newRow)
+
+        self.layout[newRow][newColumn] = piece + queenValue
+
+    def capturePiece(self, row, column):
+        # replace square value to empty
+        self.layout[row][column] = 'E'
 
     def canCapture(self, piece, playerPiece):
         pieceOwner = piece[0]
@@ -155,14 +122,51 @@ class Board():
             return ''
 
     def canMove(self, piece, deltaRow, deltaColumn):
-        # check if player move sideways
-        if (abs(deltaColumn) == 1):
-            # check if piece is queen, can move forward and backward
-            if('*' in piece):
-                return True
-            if('1' in piece):
-                # player1 have to move forward to the root
-                return deltaRow == -1
-            elif ('2' in piece):
-                # player2 have to move forward to the layout.size
-                return deltaRow == 1
+
+        # check if piece is queen, can move diagonally
+        if('*' in piece):
+            return abs(deltaRow) == abs(deltaColumn)
+        else:
+            # check if player move sideways
+            if (abs(deltaColumn) == 1):
+                if('1' in piece):
+                    # player1 have to move forward to the root
+                    return deltaRow == -1
+                elif ('2' in piece):
+                    # player2 have to move forward to the layout.size
+                    return deltaRow == 1
+
+    def tryMovement(self, piecePosition, emptyPosition):
+        pieceRow = piecePosition['row']
+        pieceColumn = piecePosition['column']
+        emptyRow = emptyPosition['row']
+        emptyColumn = emptyPosition['column']
+
+        piece = self.layout[pieceRow][pieceColumn]
+
+        deltaRow = emptyRow - pieceRow
+        deltaColumn = emptyColumn - pieceColumn
+
+        # * simple move
+
+        if (self.canMove(piece, deltaRow, deltaColumn)):
+            self.movePiece(piece, pieceRow, pieceColumn, emptyRow, emptyColumn)
+            return 'move'
+
+        # * move and capture
+
+        # get square in the middle of empty and piece
+        capturableSquare = self.getInBetweenSquare(
+            pieceRow, pieceColumn, deltaRow, deltaColumn)
+        # check if the square is not empty and belongs to opponent so it can be captured
+        if (self.canCapture(capturableSquare['value'], piece)):
+            self.capturePiece(
+                capturableSquare['row'], capturableSquare['column'])
+            # move piece if move captures opponent piece
+            self.movePiece(piece, pieceRow, pieceColumn, emptyRow, emptyColumn)
+            return 'capture'
+
+        # * invalid move
+        return None
+
+    # def canMoveQueen(self, deltaRow, deltaColumn):
