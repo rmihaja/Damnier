@@ -148,6 +148,7 @@ class ServerConnection():
         def onPlayerSetup(data):
             print('Congrats! You are player ' + str(json.loads(data)))
             self.app.setPlayerProperty(json.loads(data))
+            self.app.createGame()
             self.app.infoLabel.notify(
                 'Connection au serveur réussi. En attente d\'un autre joueur')
 
@@ -174,7 +175,9 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('Damnier')
-        self.geometry('800x820')
+        self.width = 800
+        self.height = self.width + 20
+        self.minsize(width=self.width, height=self.height)
         self.resizable(0, 0)
 
         # setup the grid layout manager
@@ -202,17 +205,23 @@ class App(tk.Tk):
         self.board = Board(8)
         self.setPlayerProperty('1')
         self.setPlayerTurn('1')
+        self.createGame()
         self.renderBoard(self.board.getBoardLayout())
         self.isPlayerTurn = True
 
     def setPlayerProperty(self, playerValue):
         self.playerValue = playerValue
         self.theme = self.setTheme(self.playerValue)
+        print('player value set')
 
-    def renderBoard(self, layout):
-        self.game = Game(self, self.isLocalGame, layout, self.eventHandler,
+    def createGame(self):
+        self.game = Game(self, self.width, self.isLocalGame, self.eventHandler,
                          self.playerValue, self.theme)
         self.game.grid(row=0, column=0)
+        print('game created')
+
+    def renderBoard(self, layout):
+        self.game.createBoardSquares(layout)
 
     # TODO : add custom theme
     def setTheme(self, playerValue):
@@ -224,11 +233,17 @@ class App(tk.Tk):
             return Theme('#FFF', '#010101', '#010101', '#FD0002', '#FFEB41')
 
     def setPlayerTurn(self, turn):
-        self.isPlayerTurn = turn
-        if (self.isPlayerTurn):
-            self.infoLabel.notify('C\'est votre tour! ')
+        if(self.isLocalGame):
+            if(turn == '1'):
+                self.infoLabel.notify('Au tour des rouges')
+            else:
+                self.infoLabel.notify('Au tour des noires')
         else:
-            self.infoLabel.notify('Tour de l\'adversaire. ')
+            self.isPlayerTurn = turn
+            if (self.isPlayerTurn):
+                self.infoLabel.notify('C\'est votre tour! ')
+            else:
+                self.infoLabel.notify('Tour de l\'adversaire. ')
 
     def onPlayerMove(self, movement):
         performedMovement = self.board.tryMovement(
@@ -240,9 +255,10 @@ class App(tk.Tk):
                 player = self.board.getSquarePlayer(
                     movement['emptyPosition'])
                 app.infoLabel.notify(
-                    'C\'est votre tour! Vous pouvez encore mangez!')
+                    'Vous pouvez encore mangez!')
             else:
                 self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
+                self.setPlayerTurn(self.playerValue)
 
             self.renderBoard(self.board.getBoardLayout())
 

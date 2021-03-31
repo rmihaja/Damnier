@@ -32,7 +32,7 @@ io.on('connection', socket => {
     if (waitingRoom.length == 2) {
         game = new Game(8, waitingRoom[0], waitingRoom[1]);
         waitingRoom = [];
-        game.updatePlayersBoard();
+        setTimeout(() => game.updatePlayersBoard(), 500);
         console.log('Game started!')
         console.log(`There are now ${waitingRoom.length} waiting`)
         game.incrementTurn();

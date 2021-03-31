@@ -91,18 +91,13 @@ class PlayerSquare(Square):
 
 class Game(tk.Frame):
 
-    def __init__(self, root, isLocal, layout, eventHandler, playerValue, theme):
+    def __init__(self, root, length, isLocal, eventHandler, playerValue, theme):
 
         # Board Frame value
-        self.length = 800
+        self.length = length
         self.theme = theme
         super().__init__(master=root, height=self.length,
                          width=self.length, bg=self.theme.boardColor)
-
-        # board data from modele/server
-        self.layout = layout
-        self.size = len(layout[0])
-        self.squareSize = self.length / self.size
 
         # player value : player1 or player2
         self.playerValue = playerValue
@@ -111,23 +106,25 @@ class Game(tk.Frame):
         # event handler to pass to controller
         self.eventHandler = eventHandler
 
-        # filling the board with canvases
-        self.__create_widgets()
+    def createBoardSquares(self, layout):
+        # board config
+        self.boardSize = len(layout[0])
+        self.squareSize = self.length / self.boardSize
 
-    def __create_widgets(self):
-        for row in range(self.size):
-            for column in range(self.size):
-                squareValue = self.layout[row][column]
+        for row in range(self.boardSize):
+            for column in range(self.boardSize):
+                squareValue = layout[row][column]
                 if (squareValue != ''):
                     square = self.createSquare(
                         squareValue, row, column, self.eventHandler)
 
                     # flip layout filling if the player is player2 for first pov
                     if (self.playerValue == '2' and not(self.isLocalGame)):
-                        square.grid(row=self.size - row,
-                                    column=self.size - column)
+                        square.grid(row=self.boardSize - row,
+                                    column=self.boardSize - column)
                     else:
                         square.grid(row=row, column=column)
+        
 
     def createSquare(self, pieceValue, rowPosition, columnPosition, eventHandler):
         if ('E' in pieceValue):
