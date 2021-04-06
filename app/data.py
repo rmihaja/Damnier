@@ -21,7 +21,7 @@ class Board():
             if(row < (size / 2) - 1):
                 piece = '2'
             elif(row > (size / 2)):
-                piece = '1'
+                piece = '1*'
             else:
                 piece = 'E'
 
@@ -90,13 +90,24 @@ class Board():
                 rowOffset, columnOffset = offset
                 diagonalSquareMoves = self.getDiagonalSquares(
                     pieceRow, pieceColumn, rowOffset, columnOffset, self.size)
+                capturableSquare = None
                 for diagonalMove in diagonalSquareMoves:
                     if ('E' in diagonalMove['value']):
+                        if(capturableSquare != None):
+                            print('capturableSquare', capturableSquare)
+                            moveType = 'c' + \
+                                str(capturableSquare['row']) + \
+                                str(capturableSquare['column'])
+                        else:
+                            moveType = ''
                         move = (diagonalMove['row'],
                                 diagonalMove['column'],
-                                '')
+                                moveType)
                         moves.append(move)
+                    elif(not piece[0] in diagonalMove['value'] and capturableSquare == None):
+                        capturableSquare = diagonalMove
                     else:
+                        # we assume it is a friendly piece so we can't assign move anymore
                         break
 
         else:
@@ -105,18 +116,18 @@ class Board():
                 offsetRow, offsetColumn = offset
 
                 # getting capture move type
-                eatableRangeSquares = self.getDiagonalSquares(
+                capturableRangeSquares = self.getDiagonalSquares(
                     pieceRow, pieceColumn, offsetRow, offsetColumn, 2)
-                if (len(eatableRangeSquares) >= 1):
-                    nearbySquare = eatableRangeSquares[0]
-                    # if eatableSquares return length of 1, we can try to move if there is nearby empty square
-                    if(self.canMove(piece, offsetRow, offsetColumn) and nearbySquare['value'] == 'E'):
+                if (len(capturableRangeSquares) >= 1):
+                    nearbySquare = capturableRangeSquares[0]
+                    # if capturableSquares return length of 1, we can try to move if there is nearby empty square
+                    if(self.canPieceMove(piece, offsetRow, offsetColumn) and nearbySquare['value'] == 'E'):
                         move = (nearbySquare['row'],
                                 nearbySquare['column'], '')
                         moves.append(move)
-                    # if else, we can try to eat
-                    elif(len(eatableRangeSquares) == 2 and self.canCapture(nearbySquare['value'], piece)):
-                        potentialEmptySquare = eatableRangeSquares[1]
+                    # if else, we can try to captur
+                    elif(len(capturableRangeSquares) == 2 and self.canCapture(nearbySquare['value'], piece)):
+                        potentialEmptySquare = capturableRangeSquares[1]
                         # check if the square is not empty and belongs to opponent so it can be captured
                         if ('E' in potentialEmptySquare['value']):
                             # 'c' symbolize as a capture move
@@ -203,12 +214,12 @@ class Board():
                         capturableSquare = self.getDiagonalSquares(
                             pieceRow, pieceColumn, deltaRow, deltaColumn, 2)
                         if (self.canCapture(capturableSquare['value'][0], piece)):
-                            print('\nRESULT: player can still move while eating')
+                            print('\nRESULT: player can still move while capturing')
                             print(
                                 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n')
                             return True
                 testNumber += 1
-        print('\nRESULT: All squares failed test. player cannot eat multiple time')
+        print('\nRESULT: All squares failed test. player cannot captur multiple time')
         print(
             '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         return False
@@ -218,20 +229,13 @@ class Board():
         # and if if player reached opposite row
         return (not ('*' in piece) and (('1' in piece and row == 0) or ('2' in piece and row == self.size - 1)))
 
-    def canMove(self, piece, deltaRow, deltaColumn):
+    def canPieceMove(self, piece, deltaRow, deltaColumn):
 
-        # check if piece is queen, can move diagonally
-        if('*' in piece):
-            return self.canMoveQueen(piece, deltaRow, deltaColumn)
-        else:
-            # check if player move sideways
-            if (abs(deltaColumn) == 1):
-                if('1' in piece):
-                    # player1 have to move forward to the root
-                    return (deltaRow == -1)
-                elif ('2' in piece):
-                    # player2 have to move forward to the layout.size
-                    return (deltaRow == 1)
-
-    def canMoveQueen(self, piece, deltaRow, deltaColumn):
-        return True
+        # check if player move sideways
+        if (abs(deltaColumn) == 1):
+            if('1' in piece):
+                # player1 have to move forward to the root
+                return (deltaRow == -1)
+            elif ('2' in piece):
+                # player2 have to move forward to the layout.size
+                return (deltaRow == 1)
