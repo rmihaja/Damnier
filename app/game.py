@@ -45,43 +45,48 @@ class EventHandler:
     def __init__(self, app):
         self.app = app
         self.selectedSquare = None
-        self.selectedPiece = None
         self.serverConnection = None
 
     # game event
 
     def onPlayerSquareSelected(self, event):
-        # check if there is already a selected piece
-        if (self.selectedSquare != None and self.selectedPiece != None):
-            # reset previous selected piece
-            self.selectedSquare.itemconfigure(
-                self.selectedPiece, fill=self.selectedSquare.piece.color)
 
         # storing canvas event info
         self.selectedSquare = event.widget
-        self.selectedPiece = self.selectedSquare.find_closest(event.x, event.y)
 
-        # highliting selected piece with theme color
-        self.selectedSquare.itemconfigure(
-            self.selectedPiece, fill=self.selectedSquare.piece.selectedColor)
+        # # highliting selected piece with theme color
+        # self.selectedSquare.itemconfigure(
+        #     self.selectedPiece, fill=self.selectedSquare.piece.selectedColor)
+
+        # send selectedPiece info to model
+        selectedPiece = {
+            'row': self.selectedSquare.row,
+            'column': self.selectedSquare.column,
+            'value': self.selectedSquare.value
+        }
+
+        self.app.onPlayerPossibleMovement(selectedPiece)
 
     def onEmptySquareSelected(self, event):
         # send movement position value if a piece is selected and it is the player's turn
         if((self.selectedSquare != None) and (app.isPlayerTurn)):
+            print('piecegame', self.selectedSquare.value)
             selectedPiece = {
                 'row': self.selectedSquare.row,
-                'column': self.selectedSquare.column
+                'column': self.selectedSquare.column,
+                'value': self.selectedSquare.value
             }
             selectedEmpty = {
                 'row': event.widget.row,
-                'column': event.widget.column
+                'column': event.widget.column,
+                'value': event.widget.value
             }
             movementProperty = {
                 'piecePosition': selectedPiece,
                 'emptyPosition': selectedEmpty
             }
 
-            # sending movement data to model/server for validation 
+            # sending movement data to model/server for validation
             print('Sending movement to model')
             if(self.app.isLocalGame):
                 self.app.onPlayerMove(movementProperty)
@@ -210,7 +215,8 @@ class App(tk.Tk):
         print('player value set')
 
     def createGame(self):
-        self.game = Game(self, self.width, self.isLocalGame, self.eventHandler, self.theme)
+        self.game = Game(self, self.width, self.isLocalGame,
+                         self.eventHandler, self.theme)
         self.game.setPlayerValues(self.playerValue, self.theme)
         self.game.grid(row=0, column=0)
         print('game created')
@@ -240,23 +246,25 @@ class App(tk.Tk):
             else:
                 self.infoLabel.notify('Tour de l\'adversaire. ')
 
-    def onPlayerMove(self, movement):
-        performedMovement = self.board.tryMovement(
-            movement['piecePosition'], movement['emptyPosition'])
-        if (performedMovement != None):
-            self.board.turn += 1
-            if (performedMovement == 'capture' and self.board.canMultipleCapture(movement['emptyPosition'])):
-                # after capture, player piece is now positionned on previous empty
-                player = self.board.getSquarePlayer(
-                    movement['emptyPosition'])
-                app.infoLabel.notify(
-                    'Vous pouvez encore mangez!')
-            else:
-                self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
-                self.setPlayerTurn(self.playerValue)
-                self.game.setPlayerValues(self.playerValue, self.theme)
+    def onPlayerPossibleMovement(self, selectedPiece):
+        self.renderBoard(self.board.getPieceMovesBoard(selectedPiece))
 
-            self.renderBoard(self.board.getBoardLayout())
+    def onPlayerMove(self, movement):
+        performedMovement = self.board.movePiece(
+            movement['piecePosition'], movement['emptyPosition'])
+        self.board.turn += 1
+        # if (performedMovement == 'capture' and self.board.canMultipleCapture(movement['emptyPosition'])):
+        #     # after capture, player piece is now positionned on previous empty
+        #     player = self.board.getSquarePlayer(
+        #         movement['emptyPosition'])
+        #     app.infoLabel.notify(
+        #         'Vous pouvez encore mangez!')
+        # else:
+        self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
+        self.setPlayerTurn(self.playerValue)
+        self.game.setPlayerValues(self.playerValue, self.theme)
+
+        self.renderBoard(self.board.getBoardLayout())
 
 
 class Home(tk.Frame):

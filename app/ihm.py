@@ -20,8 +20,13 @@ class Square(tk.Canvas):
 class Piece():
 
     def __init__(self, squareParent, parentSize, value, color, selectedColor, eventHandler):
-        self.shape = squareParent.create_oval(self.getPieceCorners(parentSize),
-                                              fill=color, outline='white', width=3)
+        # put selected color if piece was selected
+        if ('\'' in value):
+            self.shape = squareParent.create_oval(self.getPieceCorners(parentSize),
+                                                  fill=selectedColor, outline='white', width=3)
+        else:
+            self.shape = squareParent.create_oval(self.getPieceCorners(parentSize),
+                                                  fill=color, outline='white', width=3)
 
         # add queen overlay if piece is a queen
         if ('*' in value):
@@ -65,10 +70,15 @@ class Piece():
 
 class EmptySquare(Square):
 
-    def __init__(self, root, size, squareColor, row, column, eventHandler):
-        super().__init__(root, size, squareColor, row, column)
-        # empty square click event listener
-        self.bind("<ButtonPress-1>", eventHandler.onEmptySquareSelected)
+    def __init__(self, root, size, squareColor, pieceValue, selectableColor, row, column, eventHandler):
+        self.value = pieceValue
+
+        # if there is '+' data, player can move to square and it is selectable
+        if ('+' in pieceValue):
+            super().__init__(root, size, selectableColor, row, column)
+            self.bind("<ButtonPress-1>", eventHandler.onEmptySquareSelected)
+        else:
+            super().__init__(root, size, squareColor, row, column)
 
 
 class OpponentSquare(Square):
@@ -84,6 +94,7 @@ class PlayerSquare(Square):
         super().__init__(root, size, squareColor, row, column)
         self.piece = Piece(self, size, pieceValue,
                            pieceColor, selectedPieceColor, eventHandler)
+        self.value = pieceValue
 
 
 ####################### TKINTER BOARD MANAGER #######################
@@ -109,7 +120,6 @@ class Game(tk.Frame):
         # player value : player1 or player2
         self.playerValue = playerValue
         self.theme = playerTheme
-        
 
     def createBoardSquares(self, layout):
         # board config
@@ -129,16 +139,23 @@ class Game(tk.Frame):
                                     column=self.boardSize - column)
                     else:
                         square.grid(row=row, column=column)
-        
 
     def createSquare(self, pieceValue, rowPosition, columnPosition, eventHandler):
         if ('E' in pieceValue):
             return EmptySquare(self, self.squareSize,
-                               self.theme.squareColor, rowPosition, columnPosition, eventHandler)
+                               self.theme.squareColor, pieceValue,
+                               self.theme.selectedPieceColor,
+                               rowPosition, columnPosition,
+                               eventHandler)
         elif (self.playerValue in pieceValue):
-            return PlayerSquare(self, self.squareSize, self.theme.squareColor, pieceValue,
-                                self.theme.playerColor, self.theme.selectedPieceColor, rowPosition, columnPosition, eventHandler)
+            return PlayerSquare(self, self.squareSize,
+                                self.theme.squareColor, pieceValue,
+                                self.theme.playerColor, self.theme.selectedPieceColor,
+                                rowPosition, columnPosition,
+                                eventHandler)
         else:
             # square is automatically for the opponent
-            return OpponentSquare(self, self.squareSize, self.theme.squareColor, pieceValue,
-                                  self.theme.opponentColor, rowPosition, columnPosition)
+            return OpponentSquare(self, self.squareSize,
+                                  self.theme.squareColor, pieceValue,
+                                  self.theme.opponentColor,
+                                  rowPosition, columnPosition)
