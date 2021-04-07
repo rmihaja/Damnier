@@ -10,11 +10,13 @@ class Board():
     def __init__(self, size):
         self.turn = 1
         self.size = size
-        self.layout = self.createBoard(self.size)
+        self.layout, self.player1PiecesNumber, self.player2PiecesNumber = self.createBoard(
+            self.size)
 
     def createBoard(self, size):
 
         layout = []
+        playerPieceNumber = int((size / 2) * ((size / 2) - 1))
         for row in range(size):
             boardRow = []
             piece = ''
@@ -34,7 +36,7 @@ class Board():
                     boardRow.append('')
             layout.append(boardRow)
 
-        return layout
+        return layout, playerPieceNumber, playerPieceNumber
 
     # return array
     def getBoardLayout(self):
@@ -46,6 +48,42 @@ class Board():
         piece = piecePosition['value']
 
         return (pieceRow, pieceColumn, piece)
+
+    def getPlayerPiecesNumber(self, playerValue):
+        pieceNumber = 0
+
+        for row in range(self.size):
+            for column in range(self.size):
+                piece = self.layout[row][column]
+                if (playerValue in piece):
+                    pieceNumber += 1
+
+        return pieceNumber
+
+    def setPlayersPiecesNumber(self):
+        self.player1PiecesNumber = self.getPlayerPiecesNumber('1')
+        self.player2PiecesNumber = self.getPlayerPiecesNumber('2')
+
+    def getPlayerPieces(self, playerValue):
+
+        pieces = []
+
+        for row in range(self.size):
+            for column in range(self.size):
+                piece = self.layout[row][column]
+                if (playerValue in piece):
+                    pieces.append((row, column, piece))
+
+        return pieces
+
+    def getWinner(self):
+
+        if(self.player1PiecesNumber == 0):
+            return '2'
+        elif(self.player2PiecesNumber == 0):
+            return '1'
+        else:
+            return None
 
     def getDiagonalSquares(self, pieceRow, pieceColumn, rowOffset, columnOffset, depth):
         row = math.trunc(pieceRow + rowOffset)
@@ -149,7 +187,8 @@ class Board():
 
         pieceBoardMoves[pieceRow][pieceColumn] += '\''
 
-        if(mustCapture and piecePosition != lastMovedPiecePosition):
+        # TODO review two pieces comparison effectiveness
+        if(mustCapture and (pieceRow != lastMovedPiecePosition['row'] and pieceColumn != lastMovedPiecePosition['column'])):
             return pieceBoardMoves
 
         for pieceMove in self.getPossibleMoves(piecePosition, mustCapture):
@@ -178,8 +217,10 @@ class Board():
         # ? {pieceValue: '1' or '2'}{+}{if move is a capture => 'c'{pieceRow}{pieceColumn}}
         if ('c' in empty):
             self.capturePiece(int(empty[3]), int(empty[4]))
+            self.setPlayersPiecesNumber()
             return 'capture'
         else:
+            self.setPlayersPiecesNumber()
             return 'move'
 
     def capturePiece(self, row, column):

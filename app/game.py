@@ -70,7 +70,6 @@ class EventHandler:
     def onEmptySquareSelected(self, event):
         # send movement position value if a piece is selected and it is the player's turn
         if((self.selectedSquare != None) and (app.isPlayerTurn)):
-            print('piecegame', self.selectedSquare.value)
             selectedPiece = {
                 'row': self.selectedSquare.row,
                 'column': self.selectedSquare.column,
@@ -248,8 +247,13 @@ class App(tk.Tk):
             else:
                 self.infoLabel.notify('Tour de l\'adversaire. ')
 
+    def setPlayerWin(self, playerValue):
+        self.infoLabel.notify('Joueur ' + playerValue + ' a gagné!')
+
     def onPlayerPossibleMovement(self, selectedPiece):
-        self.renderBoard(self.board.getPieceMovesBoard(selectedPiece))
+        if(self.isPlayerTurn):
+            self.renderBoard(self.board.getPieceMovesBoard(
+                selectedPiece, self.mustCapture, self.lastMovedPiece))
 
     def onPlayerMove(self, movement):
         performedMovement = self.board.movePiece(
@@ -262,10 +266,14 @@ class App(tk.Tk):
             self.mustCapture = True
             self.infoLabel.notify('Vous pouvez encore mangez!')
         else:
-            self.mustCapture = False
-            self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
-            self.setPlayerTurn(self.playerValue)
-            self.game.setPlayerValues(self.playerValue, self.theme)
+            if(self.board.getWinner() != None):
+                self.setPlayerWin(self.board.getWinner())
+                self.isPlayerTurn = False
+            else:
+                self.mustCapture = False
+                self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
+                self.setPlayerTurn(self.playerValue)
+                self.game.setPlayerValues(self.playerValue, self.theme)
 
         self.renderBoard(self.board.getBoardLayout())
 
