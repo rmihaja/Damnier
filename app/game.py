@@ -205,6 +205,8 @@ class App(tk.Tk):
         self.board = Board(8)
         self.setPlayerProperty('1')
         self.setPlayerTurn('1')
+        self.mustCapture = False
+        self.lastMovedPiece = None
         self.createGame()
         self.renderBoard(self.board.getBoardLayout())
         self.isPlayerTurn = True
@@ -253,16 +255,17 @@ class App(tk.Tk):
         performedMovement = self.board.movePiece(
             movement['piecePosition'], movement['emptyPosition'])
         self.board.turn += 1
-        # if (performedMovement == 'capture' and self.board.canMultipleCapture(movement['emptyPosition'])):
-        #     # after capture, player piece is now positionned on previous empty
-        #     player = self.board.getSquarePlayer(
-        #         movement['emptyPosition'])
-        #     app.infoLabel.notify(
-        #         'Vous pouvez encore mangez!')
-        # else:
-        self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
-        self.setPlayerTurn(self.playerValue)
-        self.game.setPlayerValues(self.playerValue, self.theme)
+        self.lastMovedPiece = movement['emptyPosition']
+        self.lastMovedPiece['value'] = movement['piecePosition']['value']
+        if (performedMovement == 'capture' and self.board.canMultipleCapture(self.lastMovedPiece)):
+            # after capture, player piece is now positionned on previous empty
+            self.mustCapture = True
+            self.infoLabel.notify('Vous pouvez encore mangez!')
+        else:
+            self.mustCapture = False
+            self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
+            self.setPlayerTurn(self.playerValue)
+            self.game.setPlayerValues(self.playerValue, self.theme)
 
         self.renderBoard(self.board.getBoardLayout())
 

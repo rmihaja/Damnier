@@ -13,6 +13,7 @@ class Board():
         self.layout = self.createBoard(self.size)
 
     def createBoard(self, size):
+
         layout = []
         for row in range(size):
             boardRow = []
@@ -21,7 +22,7 @@ class Board():
             if(row < (size / 2) - 1):
                 piece = '2'
             elif(row > (size / 2)):
-                piece = '1*'
+                piece = '1'
             else:
                 piece = 'E'
 
@@ -70,7 +71,7 @@ class Board():
         else:
             return []
 
-    def getPossibleMoves(self, piecePosition):
+    def getPossibleMoves(self, piecePosition, mustCapture):
 
         # rangeOffset
         # ? (-1, -1) -> upper left
@@ -94,7 +95,6 @@ class Board():
                 for diagonalMove in diagonalSquareMoves:
                     if ('E' in diagonalMove['value']):
                         if(capturableSquare != None):
-                            print('capturableSquare', capturableSquare)
                             moveType = 'c' + \
                                 str(capturableSquare['row']) + \
                                 str(capturableSquare['column'])
@@ -103,7 +103,8 @@ class Board():
                         move = (diagonalMove['row'],
                                 diagonalMove['column'],
                                 moveType)
-                        moves.append(move)
+                        if(not mustCapture or (mustCapture and 'c' in moveType)):
+                            moves.append(move)
                     elif(not piece[0] in diagonalMove['value'] and capturableSquare == None):
                         capturableSquare = diagonalMove
                     else:
@@ -121,11 +122,11 @@ class Board():
                 if (len(capturableRangeSquares) >= 1):
                     nearbySquare = capturableRangeSquares[0]
                     # if capturableSquares return length of 1, we can try to move if there is nearby empty square
-                    if(self.canPieceMove(piece, offsetRow, offsetColumn) and nearbySquare['value'] == 'E'):
+                    if(not mustCapture and self.canPieceMove(piece, offsetRow, offsetColumn) and nearbySquare['value'] == 'E'):
                         move = (nearbySquare['row'],
                                 nearbySquare['column'], '')
                         moves.append(move)
-                    # if else, we can try to captur
+                    # if else, we can try to capture
                     elif(len(capturableRangeSquares) == 2 and self.canCapture(nearbySquare['value'], piece)):
                         potentialEmptySquare = capturableRangeSquares[1]
                         # check if the square is not empty and belongs to opponent so it can be captured
@@ -141,14 +142,17 @@ class Board():
         print(moves)
         return moves
 
-    def getPieceMovesBoard(self, piecePosition):
+    def getPieceMovesBoard(self, piecePosition, mustCapture, lastMovedPiecePosition):
         pieceRow, pieceColumn, piece = self.getPieceProperty(piecePosition)
 
         pieceBoardMoves = self.getBoardLayout()
 
         pieceBoardMoves[pieceRow][pieceColumn] += '\''
 
-        for pieceMove in self.getPossibleMoves(piecePosition):
+        if(mustCapture and piecePosition != lastMovedPiecePosition):
+            return pieceBoardMoves
+
+        for pieceMove in self.getPossibleMoves(piecePosition, mustCapture):
             row, column, moveType = pieceMove
             pieceBoardMoves[row][column] += '+' + moveType
 
@@ -172,10 +176,7 @@ class Board():
         # check if move is capture
         # ? following getPossibleMove, every selectable squares follows this pattern:
         # ? {pieceValue: '1' or '2'}{+}{if move is a capture => 'c'{pieceRow}{pieceColumn}}
-        print('empty', empty)
         if ('c' in empty):
-            print('to capture', empty[3], empty[4])
-            print('captureRow')
             self.capturePiece(int(empty[3]), int(empty[4]))
             return 'capture'
         else:
@@ -192,36 +193,13 @@ class Board():
         return pieceOwner != 'E' and pieceOwner != playerValue
 
     def canMultipleCapture(self, piecePosition):
-        print('\n################################ BEGINTEST ################################\n')
-        pieceRow = piecePosition['row']
-        pieceColumn = piecePosition['column']
-        piece = self.layout[pieceRow][pieceColumn]
+        piecePossibleMoves = self.getPossibleMoves(piecePosition, True)
 
-        testNumber = 0
+        for move in piecePossibleMoves:
+            row, column, moveType = move
+            if ('c' in moveType):
+                return True
 
-        for deltaRow in range(-1, 2, 2):
-            for deltaColumn in range(-1, 2, 2):
-                row = pieceRow + deltaRow
-                column = pieceColumn + deltaColumn
-                print('test ', testNumber)
-
-                # check if offset square position does not exceed board size layout
-                if (row in range(0, self.size) and column in range(0, self.size)):
-                    print('Square has passed layout.size test')
-                    # check if square is empty to perform the move
-                    if (self.layout[row][column] == 'E'):
-                        print('Square has passed value == E test')
-                        capturableSquare = self.getDiagonalSquares(
-                            pieceRow, pieceColumn, deltaRow, deltaColumn, 2)
-                        if (self.canCapture(capturableSquare['value'][0], piece)):
-                            print('\nRESULT: player can still move while capturing')
-                            print(
-                                '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n')
-                            return True
-                testNumber += 1
-        print('\nRESULT: All squares failed test. player cannot captur multiple time')
-        print(
-            '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         return False
 
     def canUpgradeQueen(self, piece, row):
