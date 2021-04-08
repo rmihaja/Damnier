@@ -5,18 +5,20 @@ import copy as copy
 # *** Data
 
 
+####################### BOARD STATE MANAGER #######################
+
+
 class Board():
 
     def __init__(self, size):
         self.turn = 1
         self.size = size
-        self.layout, self.player1PiecesNumber, self.player2PiecesNumber = self.createBoard(
+        self.layout = self.createBoard(
             self.size)
 
     def createBoard(self, size):
 
         layout = []
-        playerPieceNumber = int((size / 2) * ((size / 2) - 1))
         for row in range(size):
             boardRow = []
             piece = ''
@@ -36,33 +38,39 @@ class Board():
                     boardRow.append('')
             layout.append(boardRow)
 
-        return layout, playerPieceNumber, playerPieceNumber
+        return layout
 
     # return array
     def getBoardLayout(self):
         return copy.deepcopy(self.layout)
 
-    def getPieceProperty(self, piecePosition):
-        pieceRow = piecePosition['row']
-        pieceColumn = piecePosition['column']
-        piece = piecePosition['value']
+    def getProperty(self, item):
+        row = item['row']
+        column = item['column']
+        value = item['value']
 
-        return (pieceRow, pieceColumn, piece)
+        return (row, column, value)
 
-    def getPlayerPiecesNumber(self, playerValue):
-        pieceNumber = 0
+    def getDictionary(self, row, column, value):
 
-        for row in range(self.size):
-            for column in range(self.size):
-                piece = self.layout[row][column]
-                if (playerValue in piece):
-                    pieceNumber += 1
+        return {
+            'row': row,
+            'column': column,
+            'value': value
+        }
 
-        return pieceNumber
+    def getPlayerPiecesCount(self, playerValue):
 
-    def setPlayersPiecesNumber(self):
-        self.player1PiecesNumber = self.getPlayerPiecesNumber('1')
-        self.player2PiecesNumber = self.getPlayerPiecesNumber('2')
+        return len(self.getPlayerPieces(playerValue))
+
+    def getPlayerQueensCount(self, playerValue):
+
+        count = 0
+        for piece in self.getPlayerPieces(playerValue):
+            if '*' in piece:
+                count += 1
+
+        return count
 
     def getPlayerPieces(self, playerValue):
 
@@ -70,17 +78,18 @@ class Board():
 
         for row in range(self.size):
             for column in range(self.size):
-                piece = self.layout[row][column]
-                if (playerValue in piece):
-                    pieces.append((row, column, piece))
+                pieceValue = self.layout[row][column]
+                if (playerValue in pieceValue):
+                    piece = self.getDictionary(row, column, pieceValue)
+                    pieces.append(piece)
 
         return pieces
 
     def getWinner(self):
 
-        if(self.player1PiecesNumber == 0):
+        if(self.getPlayerPiecesCount('2') == 0):
             return '2'
-        elif(self.player2PiecesNumber == 0):
+        elif(self.getPlayerPiecesCount('1') == 0):
             return '1'
         else:
             return None
@@ -92,17 +101,13 @@ class Board():
         # assure row column is inside of column
         if(row in range(0, self.size) and column in range(0, self.size)):
             value = self.layout[row][column]
-            square = {
-                'row': row,
-                'column': column,
-                'value': value
-            }
+            square = self.getDictionary(row, column, value)
 
             if (depth == 1):
                 return [square]
             else:
                 # using recursion to get every squares
-                squares = list([square])
+                squares = [square]
                 squares.extend(self.getDiagonalSquares(
                     row, column, rowOffset, columnOffset, depth - 1))
                 return squares
@@ -117,7 +122,7 @@ class Board():
         # ? (1, -1) -> upper right
         #  ? (1, 1) -> bottom left
         offsets = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-        pieceRow, pieceColumn, piece = self.getPieceProperty(piecePosition)
+        pieceRow, pieceColumn, piece = self.getProperty(piecePosition)
 
         moves = []
 
@@ -138,9 +143,8 @@ class Board():
                                 str(capturableSquare['column'])
                         else:
                             moveType = ''
-                        move = (diagonalMove['row'],
-                                diagonalMove['column'],
-                                moveType)
+                        move = self.getDictionary(
+                            diagonalMove['row'], diagonalMove['column'], moveType)
                         if(not mustCapture or (mustCapture and 'c' in moveType)):
                             moves.append(move)
                     elif(not piece[0] in diagonalMove['value'] and capturableSquare == None):
@@ -161,8 +165,8 @@ class Board():
                     nearbySquare = capturableRangeSquares[0]
                     # if capturableSquares return length of 1, we can try to move if there is nearby empty square
                     if(not mustCapture and self.canPieceMove(piece, offsetRow, offsetColumn) and nearbySquare['value'] == 'E'):
-                        move = (nearbySquare['row'],
-                                nearbySquare['column'], '')
+                        move = self.getDictionary(nearbySquare['row'],
+                                                  nearbySquare['column'], '')
                         moves.append(move)
                     # if else, we can try to capture
                     elif(len(capturableRangeSquares) == 2 and self.canCapture(nearbySquare['value'], piece)):
@@ -173,15 +177,14 @@ class Board():
                             moveType = 'c' + \
                                 str(nearbySquare['row']) + \
                                 str(nearbySquare['column'])
-                            move = (
+                            move = self.getDictionary(
                                 potentialEmptySquare['row'], potentialEmptySquare['column'], moveType)
                             moves.append(move)
 
-        print(moves)
         return moves
 
     def getPieceMovesBoard(self, piecePosition, mustCapture, lastMovedPiecePosition):
-        pieceRow, pieceColumn, piece = self.getPieceProperty(piecePosition)
+        pieceRow, pieceColumn, piece = self.getProperty(piecePosition)
 
         pieceBoardMoves = self.getBoardLayout()
 
@@ -192,16 +195,17 @@ class Board():
             return pieceBoardMoves
 
         for pieceMove in self.getPossibleMoves(piecePosition, mustCapture):
-            row, column, moveType = pieceMove
+            row, column, moveType = self.getProperty(pieceMove)
             pieceBoardMoves[row][column] += '+' + moveType
 
         return pieceBoardMoves
 
-    def movePiece(self, initialPosition, newPosition):
+    def movePiece(self, initialPosition, newPosition, isCaptureAuto):
 
-        initialRow, initialColumn, piece = self.getPieceProperty(
+        self.turn += 1
+        initialRow, initialColumn, piece = self.getProperty(
             initialPosition)
-        newRow, newColumn, empty = self.getPieceProperty(newPosition)
+        newRow, newColumn, empty = self.getProperty(newPosition)
         pieceValue = self.layout[initialRow][initialColumn]
 
         # swap square value
@@ -216,11 +220,15 @@ class Board():
         # ? following getPossibleMove, every selectable squares follows this pattern:
         # ? {pieceValue: '1' or '2'}{+}{if move is a capture => 'c'{pieceRow}{pieceColumn}}
         if ('c' in empty):
-            self.capturePiece(int(empty[3]), int(empty[4]))
-            self.setPlayersPiecesNumber()
-            return 'capture'
+            self.capturePiece(int(empty[-2]), int(empty[-1]))
+            newPosition['value'] = piece
+            if (isCaptureAuto and self.canMultipleCapture(newPosition)):
+                self.turn -= 1
+                self.movePiece(newPosition, self.getPossibleMoves(
+                    newPosition, True)[0], True)
+            else:
+                return 'capture'
         else:
-            self.setPlayersPiecesNumber()
             return 'move'
 
     def capturePiece(self, row, column):
@@ -237,7 +245,7 @@ class Board():
         piecePossibleMoves = self.getPossibleMoves(piecePosition, True)
 
         for move in piecePossibleMoves:
-            row, column, moveType = move
+            row, column, moveType = self.getProperty(move)
             if ('c' in moveType):
                 return True
 
@@ -258,3 +266,103 @@ class Board():
             elif ('2' in piece):
                 # player2 have to move forward to the layout.size
                 return (deltaRow == 1)
+
+    # * AI func
+
+    def getAllPlayerMoves(self, player):
+
+        playerPieces = self.getPlayerPieces(player)
+        playerMoves = []
+
+        for playerPiece in playerPieces:
+            moves = self.getPossibleMoves(playerPiece, False)
+            playerMoves.append(moves)
+
+        return (playerPieces, playerMoves)
+
+    # evaluate move based on player pieces
+    def evaluate(self, player, opponent):
+
+        winEvaluation = 0
+        if(self.getWinner() == player):
+            winEvaluation = 1
+        elif(self.getWinner() == opponent):
+            winEvaluation = -1
+
+        queenEvaluation = self.getPlayerQueensCount(
+            player) - self.getPlayerQueensCount(opponent)
+
+        piecesCountEvaluation = self.getPlayerPiecesCount(
+            player) - self.getPlayerPiecesCount(opponent)
+
+        return winEvaluation * 10 + queenEvaluation * 5 + piecesCountEvaluation
+
+
+####################### AI MANAGER #######################
+
+class AIPlayer():
+
+    def __init__(self, playerValue, app):
+        self.playerValue = playerValue
+        self.opponentValue = str(int(self.playerValue) % 2 + 1)
+        self.app = app
+        self.count = 0
+
+    def minimax(self, boardPosition: Board, depth, alpha, beta, player):
+        # print(boardPosition.getBoardLayout())
+        # self.app.renderBoard(boardPosition.getBoardLayout())
+        self.count += 1
+        # sleep(2)
+        if (depth == 0 or boardPosition.getWinner() != None):
+            return (boardPosition.evaluate(self.playerValue, self.opponentValue), boardPosition)
+
+        if(player == self.playerValue):
+            # maximizing for AIPlayer
+            maxEvaluation = -math.inf
+            bestBoardMove = None
+            for boardPossiblePosition in self.getAllMoves(boardPosition, player):
+                # getting evaluation for next node -> opponent move
+                evaluation, boardPosition = self.minimax(
+                    boardPossiblePosition, depth - 1, alpha, beta, self.opponentValue)
+                maxEvaluation = max(maxEvaluation, evaluation)
+                if (maxEvaluation == evaluation):
+                    bestBoardMove = boardPossiblePosition
+                alpha = max(alpha, evaluation)
+                # pruning
+                if (beta <= alpha):
+                    break
+            return (maxEvaluation, bestBoardMove)
+
+        else:
+            # minimizing for opponent player
+            minEvaluation = math.inf
+            bestBoardMove = None
+            for boardPossiblePosition in self.getAllMoves(boardPosition, player):
+                # getting evaluation for next node -> AI
+                evaluation, boardPosition = self.minimax(
+                    boardPossiblePosition, depth - 1, alpha, beta, self.playerValue)
+                minEvaluation = min(minEvaluation, evaluation)
+                if (minEvaluation == evaluation):
+                    bestBoardMove = boardPossiblePosition
+                beta = min(beta, evaluation)
+                # pruning
+                if (beta <= alpha):
+                    break
+            return (minEvaluation, bestBoardMove)
+
+    def getAllMoves(self, boardPosition: Board, player):
+
+        boards = []
+
+        newBoardLayout = boardPosition.getBoardLayout()
+        playerPieces, playerMoves = boardPosition.getAllPlayerMoves(
+            player)
+
+        for pieceIndex in range(len(playerPieces)):
+            for moveIndex in range(len(playerMoves[pieceIndex])):
+                board = copy.deepcopy(boardPosition)
+                board.movePiece(
+                    playerPieces[pieceIndex], playerMoves[pieceIndex][moveIndex], True)
+                boards.append(board)
+
+        return boards

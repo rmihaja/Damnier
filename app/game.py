@@ -1,7 +1,8 @@
+from math import inf
 import tkinter as tk
 import socketio
 import json
-from data import Board
+from data import Board, AIPlayer
 from ihm import Game
 
 # *** Game
@@ -95,8 +96,11 @@ class EventHandler:
 
     # home event
 
+    def onNewSinglePlayerGame(self):
+        self.app.createLocalGame(True)
+
     def onNewOfflineMultiGame(self):
-        self.app.createLocalGame()
+        self.app.createLocalGame(False)
 
     def onNewOnlineMultiGame(self):
         self.app.isLocalGame = False
@@ -185,6 +189,7 @@ class App(tk.Tk):
 
         # setup turn management
         self.isPlayerTurn = False
+        self.isCaptureAuto = False
 
         # init Event Handler
         self.eventHandler = EventHandler(self)
@@ -199,7 +204,7 @@ class App(tk.Tk):
         self.home.grid(row=0, column=0, sticky='')
         self.infoLabel.grid(row=1, column=0, sticky='')
 
-    def createLocalGame(self):
+    def createLocalGame(self, isSingleGame):
         self.isLocalGame = True
         self.board = Board(8)
         self.setPlayerProperty('1')
@@ -209,6 +214,9 @@ class App(tk.Tk):
         self.createGame()
         self.renderBoard(self.board.getBoardLayout())
         self.isPlayerTurn = True
+        self.playerAI = None
+        if (isSingleGame):
+            self.playerAI = AIPlayer('2', self)
 
     def setPlayerProperty(self, playerValue):
         self.playerValue = playerValue
@@ -257,8 +265,7 @@ class App(tk.Tk):
 
     def onPlayerMove(self, movement):
         performedMovement = self.board.movePiece(
-            movement['piecePosition'], movement['emptyPosition'])
-        self.board.turn += 1
+            movement['piecePosition'], movement['emptyPosition'], self.isCaptureAuto)
         self.lastMovedPiece = movement['emptyPosition']
         self.lastMovedPiece['value'] = movement['piecePosition']['value']
         if (performedMovement == 'capture' and self.board.canMultipleCapture(self.lastMovedPiece)):
@@ -271,10 +278,18 @@ class App(tk.Tk):
                 self.isPlayerTurn = False
             else:
                 self.mustCapture = False
-                self.setPlayerProperty(str((int(self.playerValue) % 2) + 1))
+                self.setPlayerProperty(
+                    str((int(self.playerValue) % 2) + 1))
                 self.setPlayerTurn(self.playerValue)
-                self.game.setPlayerValues(self.playerValue, self.theme)
-
+                if(self.playerAI == None):
+                    self.game.setPlayerValues(self.playerValue, self.theme)
+                else:
+                    # AI turn
+                    minimaxEvaluation, bestBoardMove = self.playerAI.minimax(
+                        self.board, 3, -inf, inf, self.playerAI.playerValue)
+                    self.board.layout = bestBoardMove.getBoardLayout()
+                    print('node evaluated:', self.playerAI.count)
+                    self.playerAI.count = 0
         self.renderBoard(self.board.getBoardLayout())
 
 
@@ -292,17 +307,20 @@ class Home(tk.Frame):
         self.__create_widgets()
 
     def __create_widgets(self):
-        self.title = tk.Label(
+        title = tk.Label(
             self, text='Welcome to Damnier!', font='Arial 30 bold')
-        self.newOfflineMultiGame = tk.Button(
+        newSinglePlayerGame = tk.Button(
+            self, text='Nouvelle partie contre IA', command=self.eventHandler.onNewSinglePlayerGame)
+        newOfflineMultiGame = tk.Button(
             self, text='Nouvelle partie multijoueur local', command=self.eventHandler.onNewOfflineMultiGame)
-        self.newOnlineMultiGame = tk.Button(
+        newOnlineMultiGame = tk.Button(
             self, text='Nouvelle partie multijoueur en ligne', command=self.eventHandler.onNewOnlineMultiGame)
 
         # packing the buttons
-        self.title.pack()
-        self.newOfflineMultiGame.pack()
-        self.newOnlineMultiGame.pack()
+        title.pack()
+        newSinglePlayerGame.pack()
+        newOfflineMultiGame.pack()
+        newOnlineMultiGame.pack()
 
 
 # * application init
