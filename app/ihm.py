@@ -100,7 +100,7 @@ class PlayerSquare(Square):
 ####################### TKINTER BOARD MANAGER #######################
 
 
-class Game(tk.Frame):
+class BoardView(tk.Frame):
 
     def __init__(self, root, length, isLocal, eventHandler, theme):
 

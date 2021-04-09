@@ -1,12 +1,12 @@
-from math import inf
+
 import tkinter as tk
-import socketio
-import json
-from data import Board, AIPlayer
-from ihm import Game
+import socketio as socketio
+import json as json
+from data import BoardData, AIPlayer
+from ihm import BoardView
+from math import inf
 
 # *** Game
-
 
 ####################### USER INTERFACE OBJECT #######################
 
@@ -54,10 +54,6 @@ class EventHandler:
 
         # storing canvas event info
         self.selectedSquare = event.widget
-
-        # # highliting selected piece with theme color
-        # self.selectedSquare.itemconfigure(
-        #     self.selectedPiece, fill=self.selectedSquare.piece.selectedColor)
 
         # send selectedPiece info to model
         selectedPiece = {
@@ -181,7 +177,7 @@ class App(tk.Tk):
         self.width = 800
         self.height = self.width + 20
         self.minsize(width=self.width, height=self.height)
-        self.resizable(0, 0)
+        # self.resizable(0, 0)
 
         # setup the grid layout manager
         self.rowconfigure(0, weight=1)
@@ -209,7 +205,7 @@ class App(tk.Tk):
 
     def createLocalGame(self, isSingleGame):
         self.isLocalGame = True
-        self.board = Board(8, self.isBlownAuto)
+        self.board = BoardData(10, self.isBlownAuto)
         self.setPlayerProperty('1')
         self.setPlayerTurn('1')
         self.mustCapture = False
@@ -227,8 +223,8 @@ class App(tk.Tk):
         print('player value set')
 
     def createGame(self):
-        self.game = Game(self, self.width, self.isLocalGame,
-                         self.eventHandler, self.theme)
+        self.game = BoardView(self, self.width, self.isLocalGame,
+                              self.eventHandler, self.theme)
         self.game.setPlayerValues(self.playerValue, self.theme)
         self.game.grid(row=0, column=0)
         print('game created')
@@ -292,6 +288,7 @@ class App(tk.Tk):
                         self.board, 3, -inf, inf, self.playerAI.playerValue)
                     self.board.layout = bestBoardMove.getBoardLayout()
                     print('node evaluated:', self.playerAI.count)
+                    print('minimax evaluation:', minimaxEvaluation)
                     self.playerAI.count = 0
         self.renderBoard(self.board.getBoardLayout())
 
