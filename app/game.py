@@ -189,7 +189,10 @@ class App(tk.Tk):
 
         # setup turn management
         self.isPlayerTurn = False
+
+        # setup game options
         self.isCaptureAuto = False
+        self.isBlownAuto = True
 
         # init Event Handler
         self.eventHandler = EventHandler(self)
@@ -206,7 +209,7 @@ class App(tk.Tk):
 
     def createLocalGame(self, isSingleGame):
         self.isLocalGame = True
-        self.board = Board(8)
+        self.board = Board(8, self.isBlownAuto)
         self.setPlayerProperty('1')
         self.setPlayerTurn('1')
         self.mustCapture = False
@@ -216,7 +219,7 @@ class App(tk.Tk):
         self.isPlayerTurn = True
         self.playerAI = None
         if (isSingleGame):
-            self.playerAI = AIPlayer('2', self)
+            self.playerAI = AIPlayer('2')
 
     def setPlayerProperty(self, playerValue):
         self.playerValue = playerValue

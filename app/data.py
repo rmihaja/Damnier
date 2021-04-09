@@ -10,9 +10,10 @@ import copy as copy
 
 class Board():
 
-    def __init__(self, size):
+    def __init__(self, size, isBlownAuto):
         self.turn = 1
         self.size = size
+        self.isBlownAuto = isBlownAuto
         self.layout = self.createBoard(
             self.size)
 
@@ -85,12 +86,30 @@ class Board():
 
         return pieces
 
+    def getPlayerMoves(self, player, mustCapture):
+
+        playerPieces = self.getPlayerPieces(player)
+        playerMoves = []
+        moveCount = 0
+
+        for playerPiece in playerPieces:
+            moves = self.getPossibleMoves(playerPiece, mustCapture)
+            moveCount += len(moves)
+            playerMoves.append(moves)
+
+        return (playerPieces, playerMoves, moveCount)
+
     def getWinner(self):
 
-        if(self.getPlayerPiecesCount('2') == 0):
-            return '2'
-        elif(self.getPlayerPiecesCount('1') == 0):
+        player2Pieces, player2Moves, player2MoveCount = self.getPlayerMoves(
+            '2', False)
+        player1Pieces, player1Moves, player1MoveCount = self.getPlayerMoves(
+            '1', False)
+
+        if(len(player2Pieces) == 0 or player2MoveCount == 0):
             return '1'
+        elif(len(player1Pieces) == 0 or player1MoveCount == 0):
+            return '2'
         else:
             return None
 
@@ -208,13 +227,21 @@ class Board():
         newRow, newColumn, empty = self.getProperty(newPosition)
         pieceValue = self.layout[initialRow][initialColumn]
 
-        # swap square value
-        self.layout[initialRow][initialColumn] = 'E'
-        self.layout[newRow][newColumn] = pieceValue
+        if (not 'c' in empty and self.isBlownAuto and self.canPlayerCapture(pieceValue)):
+            for playerPiece in self.getPlayerPieces(pieceValue):
+                rowPiece, columnPiece, value = self.getProperty(
+                    playerPiece)
+                if (self.canMultipleCapture(playerPiece)):
+                    self.capturePiece(rowPiece, columnPiece)
 
-        # add '*' queen tag to piece layout data if piece can be a queen
-        if (self.canUpgradeQueen(piece, newRow)):
-            self.layout[newRow][newColumn] += '*'
+        if('c' in empty or not self.isBlownAuto or (self.isBlownAuto and not self.canMultipleCapture(initialPosition))):
+            # swap square value
+            self.layout[initialRow][initialColumn] = 'E'
+            self.layout[newRow][newColumn] = pieceValue
+
+            # add '*' queen tag to piece layout data if piece can be a queen
+            if (self.canUpgradeQueen(piece, newRow)):
+                self.layout[newRow][newColumn] += '*'
 
         # check if move is capture
         # ? following getPossibleMove, every selectable squares follows this pattern:
@@ -244,10 +271,7 @@ class Board():
     def canMultipleCapture(self, piecePosition):
         piecePossibleMoves = self.getPossibleMoves(piecePosition, True)
 
-        for move in piecePossibleMoves:
-            row, column, moveType = self.getProperty(move)
-            if ('c' in moveType):
-                return True
+        return len(piecePossibleMoves) >= 1
 
         return False
 
@@ -267,20 +291,13 @@ class Board():
                 # player2 have to move forward to the layout.size
                 return (deltaRow == 1)
 
+    def canPlayerCapture(self, playerValue):
+        return len(self.getPlayerMoves(playerValue, True)[1]) >= 1
+
     # * AI func
 
-    def getAllPlayerMoves(self, player):
-
-        playerPieces = self.getPlayerPieces(player)
-        playerMoves = []
-
-        for playerPiece in playerPieces:
-            moves = self.getPossibleMoves(playerPiece, False)
-            playerMoves.append(moves)
-
-        return (playerPieces, playerMoves)
-
     # evaluate move based on player pieces
+
     def evaluate(self, player, opponent):
 
         winEvaluation = 0
@@ -295,24 +312,20 @@ class Board():
         piecesCountEvaluation = self.getPlayerPiecesCount(
             player) - self.getPlayerPiecesCount(opponent)
 
-        return winEvaluation * 10 + queenEvaluation * 5 + piecesCountEvaluation
+        return winEvaluation + queenEvaluation + piecesCountEvaluation
 
 
 ####################### AI MANAGER #######################
 
 class AIPlayer():
 
-    def __init__(self, playerValue, app):
+    def __init__(self, playerValue):
         self.playerValue = playerValue
         self.opponentValue = str(int(self.playerValue) % 2 + 1)
-        self.app = app
         self.count = 0
 
     def minimax(self, boardPosition: Board, depth, alpha, beta, player):
-        # print(boardPosition.getBoardLayout())
-        # self.app.renderBoard(boardPosition.getBoardLayout())
         self.count += 1
-        # sleep(2)
         if (depth == 0 or boardPosition.getWinner() != None):
             return (boardPosition.evaluate(self.playerValue, self.opponentValue), boardPosition)
 
@@ -351,12 +364,11 @@ class AIPlayer():
             return (minEvaluation, bestBoardMove)
 
     def getAllMoves(self, boardPosition: Board, player):
-
         boards = []
 
         newBoardLayout = boardPosition.getBoardLayout()
-        playerPieces, playerMoves = boardPosition.getAllPlayerMoves(
-            player)
+        playerPieces, playerMoves, playerMoveCount = boardPosition.getPlayerMoves(
+            player, False)
 
         for pieceIndex in range(len(playerPieces)):
             for moveIndex in range(len(playerMoves[pieceIndex])):
