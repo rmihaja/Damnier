@@ -2,8 +2,8 @@
 import tkinter as tk
 import socketio as socketio
 import json as json
-from data import BoardData, AIPlayer
-from ihm import BoardView
+from data import Game, AIPlayer
+from ihm import Home, BoardView
 from math import inf
 
 # *** Game
@@ -13,31 +13,26 @@ from math import inf
 
 class Theme:
 
-    def __init__(self, boardColor, squareColor, playerColor, opponentColor, selectedPieceColor):
+    def __init__(self, name, boardColor, squareColor, player1Color, player2Color, selectedPieceColor, selectedMoveColor):
+
+        self.name = name
+
         self.boardColor = boardColor
         self.squareColor = squareColor
-        self.playerColor = playerColor
-        self.opponentColor = opponentColor
+        self.player1Color = player1Color
+        self.player2Color = player2Color
         self.selectedPieceColor = selectedPieceColor
+        self.selectedMoveColor = selectedMoveColor
 
-    def __str__(self):
-        return 'playerColor: ' + self.playerColor + '\n opponentColor : ' + self.opponentColor
+    def getPlayerColor(self, player):
 
-
-class InfoLabel(tk.Frame):
-
-    def __init__(self, root):
-        super().__init__(master=root)
-        self.label = tk.Label(self)
-        self.label.pack()
-
-    # display given message to user
-    def notify(self, message):
-        self.label.configure(text=message)
+        if ('1' in player):
+            return self.player1Color
+        else:
+            return self.player2Color
 
 
 ####################### EVENT MANAGER #######################
-
 
 class EventHandler:
 
@@ -62,48 +57,45 @@ class EventHandler:
             'value': self.selectedSquare.value
         }
 
-        self.app.onPlayerPossibleMovement(selectedPiece)
+        self.app.onPlayerPossibleMove(selectedPiece)
 
     def onEmptySquareSelected(self, event):
-        # send movement position value if a piece is selected and it is the player's turn
-        if((self.selectedSquare != None) and (app.isPlayerTurn)):
-            selectedPiece = {
-                'row': self.selectedSquare.row,
-                'column': self.selectedSquare.column,
-                'value': self.selectedSquare.value
-            }
-            selectedEmpty = {
-                'row': event.widget.row,
-                'column': event.widget.column,
-                'value': event.widget.value
-            }
-            movementProperty = {
-                'piecePosition': selectedPiece,
-                'emptyPosition': selectedEmpty
-            }
+        # send move position value if a piece is selected and it is the player's turn
+        selectedPiece = {
+            'row': self.selectedSquare.row,
+            'column': self.selectedSquare.column,
+            'value': self.selectedSquare.value
+        }
+        selectedEmpty = {
+            'row': event.widget.row,
+            'column': event.widget.column,
+            'value': event.widget.value
+        }
+        moveProperty = {
+            'piecePosition': selectedPiece,
+            'emptyPosition': selectedEmpty
+        }
 
-            # sending movement data to model/server for validation
-            print('Sending movement to model')
-            if(self.app.isLocalGame):
-                self.app.onPlayerMove(movementProperty)
-            else:
-                self.serverConnection.socket.emit(
-                    'move', json.dumps(movementProperty))
+        # sending move data to model/server for validation
+        print('Sending move to model')
+        self.app.onPlayerMove(moveProperty)
 
     # home event
 
-    def onNewSinglePlayerGame(self):
-        self.app.createLocalGame(True)
+    def onNewGameButton(self):
+        self.app.getGameBoard(True, True,
+                              8, False, False)
 
-    def onNewOfflineMultiGame(self):
-        self.app.createLocalGame(False)
+    def onSettingsButton(self):
+        pass
 
-    def onNewOnlineMultiGame(self):
-        self.app.isLocalGame = False
+    def onAboutButton(self):
+        pass
 
-        # check if app is already connected to server
-        if(self.serverConnection == None):
-            self.serverConnection = ServerConnection(self.app)
+    # game creation event
+    def onStartNewGameButton(self, isLocalGame, isMultiGame, boardSize, isCaptureAuto, isBlownAuto):
+        self.app.getGameBoard(isLocalGame, isMultiGame,
+                              boardSize, isCaptureAuto, isBlownAuto)
 
 
 ####################### SERVER COMMUNICATION MANAGER ######################
@@ -168,159 +160,77 @@ class ServerConnection():
 
 ####################### APPLICATION MANAGER #######################
 
-
 class App(tk.Tk):
 
     def __init__(self):
         super().__init__()
         self.title('Damnier')
-        self.width = 800
-        self.height = self.width + 20
-        self.minsize(width=self.width, height=self.height)
-        # self.resizable(0, 0)
+        self.minLength = 800
+        self.minsize(width=self.minLength, height=self.minLength)
+
+        # setup theme
+        self.themes = [
+            Theme('default', '#FFF', '#010101', '#FD0002',
+                  '#010101', '#FFEB41', '#D9E0B0'),
+            Theme('Space blue', '#E2F1F9', '#031D7B',
+                  '#D1B9B5', '#FDDF83', '#FFEB41', '#D9E0B0'),
+            Theme('Classic brown', '#F5DEB3', '#AC7D58',
+                  '#000', 'FFF', '#FFEB41', '#D9E0B0')
+        ]
 
         # setup the grid layout manager
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-
-        # setup turn management
-        self.isPlayerTurn = False
-
-        # setup game options
-        self.isCaptureAuto = False
-        self.isBlownAuto = True
+        self.columnconfigure(1, weight=0)
+        self.columnconfigure(2, weight=1)
 
         # init Event Handler
         self.eventHandler = EventHandler(self)
 
         # init home + info label
-        self.__create_widgets()
+        self.displayedFrame = None
+        self.getHome()
 
-    def __create_widgets(self):
-        self.home = Home(self, self.eventHandler)
-        self.infoLabel = InfoLabel(self)
+    # interface controller
 
-        self.home.grid(row=0, column=0, sticky='')
-        self.infoLabel.grid(row=1, column=0, sticky='')
+    def getHome(self):
+        home = Home(self, self.eventHandler)
+        self.renderFrame(home)
 
-    def createLocalGame(self, isSingleGame):
-        self.isLocalGame = True
-        self.board = BoardData(10, self.isBlownAuto)
-        self.setPlayerProperty('1')
-        self.setPlayerTurn('1')
-        self.mustCapture = False
-        self.lastMovedPiece = None
-        self.createGame()
-        self.renderBoard(self.board.getBoardLayout())
-        self.isPlayerTurn = True
-        self.playerAI = None
-        if (isSingleGame):
-            self.playerAI = AIPlayer('2')
+    def renderFrame(self, frame):
+        if(self.displayedFrame != None):
+            self.displayedFrame.destroy()
+        self.displayedFrame = frame
+        self.displayedFrame.grid(row=0, column=0, columnspan=3, sticky='')
 
-    def setPlayerProperty(self, playerValue):
-        self.playerValue = playerValue
-        self.theme = self.setTheme(self.playerValue)
-        print('player value set')
+    # game controller
 
-    def createGame(self):
-        self.game = BoardView(self, self.width, self.isLocalGame,
-                              self.eventHandler, self.theme)
-        self.game.setPlayerValues(self.playerValue, self.theme)
-        self.game.grid(row=0, column=0)
+    def getGameBoard(self, isLocalGame, isMultiGame, size, isCaptureAuto, isBlownAuto):
+        self.game = Game(isLocalGame, isMultiGame, size,
+                         isCaptureAuto, isBlownAuto)
+        self.boardView = BoardView(self, 800, isLocalGame,
+                                   self.eventHandler, self.themes[0])
         print('game created')
 
+        self.displayedFrame.destroy()
+        self.renderBoard(self.game.getBoardLayout())
+
     def renderBoard(self, layout):
-        self.game.createBoardSquares(layout)
+        self.boardView.createBoardSquares(layout, self.game.playerTurn)
+        self.boardView.grid(row=0, column=1)
 
-    # TODO : add custom theme
-    def setTheme(self, playerValue):
-        if (playerValue == '1'):
-            # player is player1 => initial colors
-            return Theme('#FFF', '#010101', '#FD0002', '#010101', '#FFEB41')
+    def onPlayerPossibleMove(self, selectedPiece):
+        self.renderBoard(
+            self.game.board.getPieceMovesBoard(
+                selectedPiece, self.game.mustCapture, self.game.lastMovedPiece))
+
+    def onPlayerMove(self, move):
+
+        performedMove = self.game.setPlayerMove(move)
+        if (performedMove == 'gameover'):
+            print('gameover')
         else:
-            # player is player2 => swap player colors
-            return Theme('#FFF', '#010101', '#010101', '#FD0002', '#FFEB41')
-
-    def setPlayerTurn(self, turn):
-        if(self.isLocalGame):
-            if(turn == '1'):
-                self.infoLabel.notify('Au tour des rouges')
-            else:
-                self.infoLabel.notify('Au tour des noires')
-        else:
-            self.isPlayerTurn = turn
-            if (self.isPlayerTurn):
-                self.infoLabel.notify('C\'est votre tour! ')
-            else:
-                self.infoLabel.notify('Tour de l\'adversaire. ')
-
-    def setPlayerWin(self, playerValue):
-        self.infoLabel.notify('Joueur ' + playerValue + ' a gagné!')
-
-    def onPlayerPossibleMovement(self, selectedPiece):
-        if(self.isPlayerTurn):
-            self.renderBoard(self.board.getPieceMovesBoard(
-                selectedPiece, self.mustCapture, self.lastMovedPiece))
-
-    def onPlayerMove(self, movement):
-        performedMovement = self.board.movePiece(
-            movement['piecePosition'], movement['emptyPosition'], self.isCaptureAuto)
-        self.lastMovedPiece = movement['emptyPosition']
-        self.lastMovedPiece['value'] = movement['piecePosition']['value']
-        if (performedMovement == 'capture' and self.board.canMultipleCapture(self.lastMovedPiece)):
-            # after capture, player piece is now positionned on previous empty
-            self.mustCapture = True
-            self.infoLabel.notify('Vous pouvez encore mangez!')
-        else:
-            if(self.board.getWinner() != None):
-                self.setPlayerWin(self.board.getWinner())
-                self.isPlayerTurn = False
-            else:
-                self.mustCapture = False
-                self.setPlayerProperty(
-                    str((int(self.playerValue) % 2) + 1))
-                self.setPlayerTurn(self.playerValue)
-                if(self.playerAI == None):
-                    self.game.setPlayerValues(self.playerValue, self.theme)
-                else:
-                    # AI turn
-                    minimaxEvaluation, bestBoardMove = self.playerAI.minimax(
-                        self.board, 3, -inf, inf, self.playerAI.playerValue)
-                    self.board.layout = bestBoardMove.getBoardLayout()
-                    print('node evaluated:', self.playerAI.count)
-                    print('minimax evaluation:', minimaxEvaluation)
-                    self.playerAI.count = 0
-        self.renderBoard(self.board.getBoardLayout())
-
-
-class Home(tk.Frame):
-
-    def __init__(self, root, eventHandler):
-
-        # Home Frame value
-        self.length = 800
-        super().__init__(master=root, height=self.length, width=self.length)
-
-        # event handler to pass to app
-        self.eventHandler = eventHandler
-
-        self.__create_widgets()
-
-    def __create_widgets(self):
-        title = tk.Label(
-            self, text='Welcome to Damnier!', font='Arial 30 bold')
-        newSinglePlayerGame = tk.Button(
-            self, text='Nouvelle partie contre IA', command=self.eventHandler.onNewSinglePlayerGame)
-        newOfflineMultiGame = tk.Button(
-            self, text='Nouvelle partie multijoueur local', command=self.eventHandler.onNewOfflineMultiGame)
-        newOnlineMultiGame = tk.Button(
-            self, text='Nouvelle partie multijoueur en ligne', command=self.eventHandler.onNewOnlineMultiGame)
-
-        # packing the buttons
-        title.pack()
-        newSinglePlayerGame.pack()
-        newOfflineMultiGame.pack()
-        newOnlineMultiGame.pack()
+            self.renderBoard(self.game.getBoardLayout())
 
 
 # * application init

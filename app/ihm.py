@@ -2,8 +2,43 @@ import tkinter as tk
 
 # *** IHM
 
+####################### TKINTER WIDGET OVERRIDE #######################
 
-####################### BOARD OBJECT #######################
+
+class Title(tk.Label):
+
+    def __init__(self, root, text):
+        super().__init__(master=root, text=text, font='Arial 30 bold')
+        self.pack()
+
+
+class Button(tk.Button):
+
+    def __init__(self, root, text, command):
+        super().__init__(master=root, text=text, command=command)
+        self.pack()
+
+
+####################### TKINTER INTERFACE MANAGER #######################
+
+
+class Home(tk.Frame):
+
+    def __init__(self, root, eventHandler):
+
+        # Home Frame value
+        super().__init__(master=root)
+
+        # element init
+        Title(self, text='Damnier!')
+        Button(self, text='Nouvelle partie',
+               command=eventHandler.onNewGameButton)
+        Button(self, text='Paramètres',
+               command=eventHandler.onSettingsButton)
+        Button(self, text='A propos', command=eventHandler.onAboutButton)
+
+
+####################### BOARD WIDGETS #######################
 
 
 class Square(tk.Canvas):
@@ -104,7 +139,7 @@ class BoardView(tk.Frame):
 
     def __init__(self, root, length, isLocal, eventHandler, theme):
 
-        # Board Frame value
+        # Board config
         self.length = length
         self.theme = theme
         super().__init__(master=root, height=self.length,
@@ -116,12 +151,8 @@ class BoardView(tk.Frame):
         # event handler to pass to controller
         self.eventHandler = eventHandler
 
-    def setPlayerValues(self, playerValue, playerTheme):
-        # player value : player1 or player2
-        self.playerValue = playerValue
-        self.theme = playerTheme
+    def createBoardSquares(self, layout, playerValue):
 
-    def createBoardSquares(self, layout):
         # board config
         self.boardSize = len(layout[0])
         self.squareSize = self.length / self.boardSize
@@ -131,7 +162,7 @@ class BoardView(tk.Frame):
                 squareValue = layout[row][column]
                 if (squareValue != ''):
                     square = self.createSquare(
-                        squareValue, row, column, self.eventHandler)
+                        playerValue, squareValue, row, column, self.eventHandler)
 
                     # flip layout filling if the player is player2 for first pov
                     if (self.isLocalGame == False and self.playerValue == '2'):
@@ -140,22 +171,23 @@ class BoardView(tk.Frame):
                     else:
                         square.grid(row=row, column=column)
 
-    def createSquare(self, pieceValue, rowPosition, columnPosition, eventHandler):
+    def createSquare(self, playerValue, pieceValue, rowPosition, columnPosition, eventHandler):
         if ('E' in pieceValue):
             return EmptySquare(self, self.squareSize,
                                self.theme.squareColor, pieceValue,
                                self.theme.selectedPieceColor,
                                rowPosition, columnPosition,
                                eventHandler)
-        elif (self.playerValue in pieceValue):
+        elif (playerValue in pieceValue):
             return PlayerSquare(self, self.squareSize,
                                 self.theme.squareColor, pieceValue,
-                                self.theme.playerColor, self.theme.selectedPieceColor,
+                                self.theme.getPlayerColor(pieceValue),
+                                self.theme.selectedPieceColor,
                                 rowPosition, columnPosition,
                                 eventHandler)
         else:
             # square is automatically for the opponent
             return OpponentSquare(self, self.squareSize,
                                   self.theme.squareColor, pieceValue,
-                                  self.theme.opponentColor,
+                                  self.theme.getPlayerColor(pieceValue),
                                   rowPosition, columnPosition)

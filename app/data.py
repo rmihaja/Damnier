@@ -4,6 +4,86 @@ from copy import deepcopy
 
 # *** Data
 
+####################### GAME STATE MANAGER #######################
+
+
+class Game:
+
+    def __init__(self, isLocalGame, isMultiGame, size, isCaptureAuto, isBlownAuto):
+
+        self.size = size
+        self.boardHistory = []
+        self.moveHistory = []
+
+        # game setting
+        self.isLocalGame = isLocalGame
+
+        # game options
+        self.isCaptureAuto = isCaptureAuto
+        self.isBlownAuto = isBlownAuto
+
+        # move setup
+        self.mustCapture = False
+        self.lastMovedPiece = None
+
+        # init game
+        self.createGame(isLocalGame, isMultiGame)
+        self.playerTurn = '1'
+
+    def createGame(self, isLocalGame, isMultiGame):
+
+        self.board = BoardData(8, self.isBlownAuto)
+
+        # player vs AI game
+        if (isLocalGame and not isMultiGame):
+            self.gameType = 'single_local'
+            self.playerAI = AIPlayer('2')
+
+        # player vs player game
+        elif (isLocalGame and isMultiGame):
+            self.gameType = 'multi_local'
+
+        # player vs player online game
+        elif (not isLocalGame and isMultiGame):
+            self.gameType = 'multi_online'
+            self.serverConnection = ServerConnection(self.app)
+
+    def getBoardLayout(self):
+        return self.board.getLayout()
+
+    def setPlayerMove(self, move):
+
+        self.boardHistory.append(self.board.getLayout())
+
+        piecePosition, emptyPosition = move['piecePosition'], move['emptyPosition']
+        performedMove = self.board.movePiece(
+            piecePosition, emptyPosition, self.isCaptureAuto)
+
+        # set last move piece to his future position
+        self.lastMovedPiece = emptyPosition
+        self.lastMovedPiece['value'] = emptyPosition['value']
+
+        if (performedMove == 'capture' and self.board.canMultipleCapture(self.lastMovedPiece)):
+            # after capture, player piece is now positionned on previous empty
+            self.mustCapture = True
+            return 'capture'
+
+        if (self.board.getWinner() != None):
+            return 'gameover'
+
+        if ('single' in self.gameType):
+            # AI turn
+            minimaxEvaluation, bestBoardMove = self.playerAI.minimax(
+                self.board, 3, -inf, inf, self.playerAI.playerValue)
+            self.board.layout = bestBoardMove.getLayout()
+            print('node evaluated:', self.playerAI.count)
+            print('minimax evaluation:', minimaxEvaluation)
+            self.playerAI.count = 0
+        else:
+            self.mustCapture = False
+            self.playerTurn = str(int(self.playerTurn) % 2 + 1)
+            return 'turn'
+
 
 ####################### BOARD STATE MANAGER #######################
 
@@ -11,7 +91,6 @@ from copy import deepcopy
 class BoardData():
 
     def __init__(self, size, isBlownAuto):
-        self.turn = 1
         self.size = size
         self.isBlownAuto = isBlownAuto
         self.layout = self.createBoard(
@@ -42,7 +121,7 @@ class BoardData():
         return layout
 
     # return board layout array
-    def getBoardLayout(self):
+    def getLayout(self):
         return deepcopy(self.layout)
 
     # method communications
@@ -59,6 +138,8 @@ class BoardData():
             'column': column,
             'value': value
         }
+
+        return len(self.moveHistory)
 
     def getPlayerPiecesCount(self, player):
         return len(self.getPlayerPieces(player))
@@ -216,7 +297,7 @@ class BoardData():
     def getPieceMovesBoard(self, piece, mustCapture, lastMovedPiece):
         pieceRow, pieceColumn, pieceValue = self.getProperty(piece)
 
-        pieceBoardMoves = self.getBoardLayout()
+        pieceBoardMoves = self.getLayout()
 
         pieceBoardMoves[pieceRow][pieceColumn] += '\''
 
@@ -235,7 +316,6 @@ class BoardData():
 
     def movePiece(self, initialPosition, newPosition, isCaptureAuto):
 
-        self.turn += 1
         initialRow, initialColumn, piece = self.getProperty(
             initialPosition)
         newRow, newColumn, empty = self.getProperty(newPosition)
@@ -264,7 +344,6 @@ class BoardData():
             self.capturePiece(int(empty[-2]), int(empty[-1]))
             newPosition['value'] = piece
             if (isCaptureAuto and self.canMultipleCapture(newPosition)):
-                self.turn -= 1
                 self.movePiece(newPosition, self.getPossibleMoves(
                     newPosition, True)[0], True)
             else:
@@ -372,15 +451,14 @@ class AIPlayer():
     def getAllMoves(self, board, player):
         boards = []
 
-        newBoardLayout = board.getBoardLayout()
         playerPieces, playerMoves, playerMoveCount = board.getPlayerMoves(
             player, False)
 
         for pieceIndex in range(len(playerPieces)):
             for moveIndex in range(len(playerMoves[pieceIndex])):
-                board = deepcopy(board)
-                board.movePiece(
+                boardPossiblePosition = deepcopy(board)
+                boardPossiblePosition.movePiece(
                     playerPieces[pieceIndex], playerMoves[pieceIndex][moveIndex], True)
-                boards.append(board)
+                boards.append(boardPossiblePosition)
 
         return boards
