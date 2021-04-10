@@ -9,14 +9,10 @@ from copy import deepcopy
 
 class Game:
 
-    def __init__(self, isLocalGame, isMultiGame, size, isCaptureAuto, isBlownAuto):
+    def __init__(self, gameMode, isGameWithAI, size, isCaptureAuto, isBlownAuto):
 
-        self.size = size
         self.boardHistory = []
         self.moveHistory = []
-
-        # game setting
-        self.isLocalGame = isLocalGame
 
         # game options
         self.isCaptureAuto = isCaptureAuto
@@ -27,26 +23,24 @@ class Game:
         self.lastMovedPiece = None
 
         # init game
-        self.createGame(isLocalGame, isMultiGame)
+        self.createGame(gameMode, size, isGameWithAI)
         self.playerTurn = '1'
 
-    def createGame(self, isLocalGame, isMultiGame):
+    def createGame(self, gameMode, size, isGameWithAI):
 
-        self.board = BoardData(8, self.isBlownAuto)
+        self.board = BoardData(size, self.isBlownAuto)
+        self.gameType = gameMode
 
         # player vs AI game
-        if (isLocalGame and not isMultiGame):
-            self.gameType = 'single_local'
+        if (isGameWithAI):
+            self.gameType = 'single_' + gameMode
             self.playerAI = AIPlayer('2')
 
         # player vs player game
-        elif (isLocalGame and isMultiGame):
-            self.gameType = 'multi_local'
-
-        # player vs player online game
-        elif (not isLocalGame and isMultiGame):
-            self.gameType = 'multi_online'
-            self.serverConnection = ServerConnection(self.app)
+        else:
+            self.gameType = 'multi_' + gameMode
+            if('online' in gameMode):
+                self.serverConnection = ServerConnection(self.app)
 
     def getBoardLayout(self):
         return self.board.getLayout()

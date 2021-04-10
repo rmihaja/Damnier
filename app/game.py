@@ -3,7 +3,7 @@ import tkinter as tk
 import socketio as socketio
 import json as json
 from data import Game, AIPlayer
-from ihm import Home, BoardView
+from ihm import Home, GameSettings, BoardView
 from math import inf
 
 # *** Game
@@ -77,14 +77,12 @@ class EventHandler:
         }
 
         # sending move data to model/server for validation
-        print('Sending move to model')
         self.app.onPlayerMove(moveProperty)
 
     # home event
 
     def onNewGameButton(self):
-        self.app.getGameBoard(True, True,
-                              8, False, False)
+        self.app.getGameSettings()
 
     def onSettingsButton(self):
         pass
@@ -93,9 +91,9 @@ class EventHandler:
         pass
 
     # game creation event
-    def onStartNewGameButton(self, isLocalGame, isMultiGame, boardSize, isCaptureAuto, isBlownAuto):
-        self.app.getGameBoard(isLocalGame, isMultiGame,
-                              boardSize, isCaptureAuto, isBlownAuto)
+    def onStartNewGameButton(self, gameMode, isGameWithAI, boardSize, isCaptureAuto, isBlownAuto):
+        self.app.getGameBoard(gameMode, isGameWithAI,
+                              int(boardSize), isCaptureAuto, isBlownAuto)
 
 
 ####################### SERVER COMMUNICATION MANAGER ######################
@@ -197,6 +195,10 @@ class App(tk.Tk):
         home = Home(self, self.eventHandler)
         self.renderFrame(home)
 
+    def getGameSettings(self):
+        gameSettings = GameSettings(self, self.eventHandler)
+        self.renderFrame(gameSettings)
+
     def renderFrame(self, frame):
         if(self.displayedFrame != None):
             self.displayedFrame.destroy()
@@ -205,10 +207,10 @@ class App(tk.Tk):
 
     # game controller
 
-    def getGameBoard(self, isLocalGame, isMultiGame, size, isCaptureAuto, isBlownAuto):
-        self.game = Game(isLocalGame, isMultiGame, size,
+    def getGameBoard(self, gameMode, isGameWithAI, size, isCaptureAuto, isBlownAuto):
+        self.game = Game(gameMode, isGameWithAI, size,
                          isCaptureAuto, isBlownAuto)
-        self.boardView = BoardView(self, 800, isLocalGame,
+        self.boardView = BoardView(self, 800, gameMode,
                                    self.eventHandler, self.themes[0])
         print('game created')
 
@@ -229,8 +231,8 @@ class App(tk.Tk):
         performedMove = self.game.setPlayerMove(move)
         if (performedMove == 'gameover'):
             print('gameover')
-        else:
-            self.renderBoard(self.game.getBoardLayout())
+
+        self.renderBoard(self.game.getBoardLayout())
 
 
 # * application init

@@ -4,12 +4,69 @@ import tkinter as tk
 
 ####################### TKINTER WIDGET OVERRIDE #######################
 
+# * Text
 
-class Title(tk.Label):
+
+class Label(tk.Label):
+
+    def __init__(self, root, text):
+        super().__init__(master=root, text=text, font='Arial 15')
+        self.pack()
+
+
+class Header(tk.Label):
 
     def __init__(self, root, text):
         super().__init__(master=root, text=text, font='Arial 30 bold')
         self.pack()
+
+# * inputs
+
+
+class InputText(tk.Entry):
+
+    def __init__(self, root, defaultText):
+
+        self.variable = tk.StringVar(value=defaultText)
+
+        super().__init__(master=root)
+        self.pack()
+
+    def getValue(self):
+        return self.variable.get()
+
+
+class InputRadio(tk.Radiobutton):
+
+    def __init__(self, root, optionsList):
+
+        # define first option as default selected input
+        self.variable = tk.StringVar(value=optionsList[0][1])
+
+        for option in optionsList:
+            optionText, optionValue = option
+            super().__init__(master=root, text=optionText,
+                             value=optionValue, variable=self.variable)
+            self.pack()
+
+    def getValue(self):
+        return self.variable.get()
+
+
+class InputCheckbox(tk.Checkbutton):
+
+    def __init__(self, root, text):
+
+        self.variable = tk.BooleanVar()
+
+        super().__init__(master=root, text=text,
+                         onvalue=True,
+                         offvalue=False,
+                         variable=self.variable)
+        self.pack()
+
+    def getValue(self):
+        return self.variable.get()
 
 
 class Button(tk.Button):
@@ -30,12 +87,49 @@ class Home(tk.Frame):
         super().__init__(master=root)
 
         # element init
-        Title(self, text='Damnier!')
+        Header(self, text='Damnier!')
         Button(self, text='Nouvelle partie',
                command=eventHandler.onNewGameButton)
         Button(self, text='Paramètres',
                command=eventHandler.onSettingsButton)
         Button(self, text='A propos', command=eventHandler.onAboutButton)
+
+
+class GameSettings(tk.Frame):
+
+    def __init__(self, root, eventHandler):
+        super().__init__(master=root)
+        Header(self, text='Nouvelle partie')
+
+        Label(self, text='Votre pseudo')
+        player1Name = InputText(self, 'Joueur 1')
+
+        Label(self, text='Mode de jeu')
+        gameMode = InputRadio(self, optionsList=[
+            ('Local', 'local'), ('En ligne', 'multi')])
+
+        Label(self, text='Pseudo du joueur 2')
+        player2Name = InputText(self, 'Joueur 2')
+        isGameWithAI = InputCheckbox(
+            self, text='Jouer contre l\'ordinateur')
+
+        Label(self, text='Taille du damier')
+        boardSize = InputRadio(self, optionsList=[
+            ('8 x 8', '8'), ('10 x 10', '10'), ('12 x 12', '12')])
+
+        Label(self, text='Options')
+        isCaptureAuto = InputCheckbox(
+            self, text='Prise de plusieurs pions automatique')
+        isBlownAuto = InputCheckbox(self, text='Pions soufflés')
+
+        Button(self, text='Commencer',
+               command=lambda:
+                   eventHandler.onStartNewGameButton(
+                       gameMode.getValue(),
+                       isGameWithAI.getValue(),
+                       boardSize.getValue(),
+                       isCaptureAuto.getValue(),
+                       isBlownAuto.getValue()))
 
 
 ####################### BOARD WIDGETS #######################
@@ -132,12 +226,12 @@ class PlayerSquare(Square):
         self.value = pieceValue
 
 
-####################### TKINTER BOARD MANAGER #######################
+##########i1############# TKINTER BOARD MANAGER #######################
 
 
 class BoardView(tk.Frame):
 
-    def __init__(self, root, length, isLocal, eventHandler, theme):
+    def __init__(self, root, length, gameMode, eventHandler, theme):
 
         # Board config
         self.length = length
@@ -146,7 +240,10 @@ class BoardView(tk.Frame):
                          width=self.length, bg=self.theme.boardColor)
 
         # game state
-        self.isLocalGame = isLocal
+        if('local' in gameMode):
+            self.isLocalGame = True
+        else:
+            self.isLocalGame = False
 
         # event handler to pass to controller
         self.eventHandler = eventHandler
