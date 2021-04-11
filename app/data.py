@@ -9,7 +9,7 @@ from copy import deepcopy
 
 class Game:
 
-    def __init__(self, gameMode, isGameWithAI, size, isCaptureAuto, isBlownAuto):
+    def __init__(self, gameMode, isGameWithAI, size, timeLimit, isCaptureAuto, isBlownAuto):
 
         self.boardHistory = []
         self.moveHistory = []
@@ -17,6 +17,11 @@ class Game:
         # game options
         self.isCaptureAuto = isCaptureAuto
         self.isBlownAuto = isBlownAuto
+
+        if (timeLimit > 0):
+            self.isTimeLimit = True
+        else:
+            self.isTimeLimit = False
 
         # move setup
         self.mustCapture = False

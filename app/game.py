@@ -3,8 +3,10 @@ import tkinter as tk
 import socketio as socketio
 import json as json
 from data import Game, AIPlayer
-from ihm import Home, GameSettings, BoardView
+from ihm import Home, GameSettings, BoardView, PlayerStats
 from math import inf
+from random import randrange
+import time as time
 
 # *** Game
 
@@ -91,9 +93,12 @@ class EventHandler:
         pass
 
     # game creation event
-    def onStartNewGameButton(self, gameMode, isGameWithAI, boardSize, isCaptureAuto, isBlownAuto):
+    def onStartNewGameButton(self, gameMode, isGameWithAI, boardSize, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
         self.app.getGameBoard(gameMode, isGameWithAI,
-                              int(boardSize), isCaptureAuto, isBlownAuto)
+                              int(boardSize),
+                              int(timeLimit),
+                              isCaptureAuto, isBlownAuto,
+                              player1Name, player2Name)
 
 
 ####################### SERVER COMMUNICATION MANAGER ######################
@@ -173,8 +178,10 @@ class App(tk.Tk):
             Theme('Space blue', '#E2F1F9', '#031D7B',
                   '#D1B9B5', '#FDDF83', '#FFEB41', '#D9E0B0'),
             Theme('Classic brown', '#F5DEB3', '#AC7D58',
-                  '#000', 'FFF', '#FFEB41', '#D9E0B0')
+                  '#000', '#FFF', '#FFEB41', '#D9E0B0')
         ]
+
+        self.currentTheme = self.themes[randrange(0, len(self.themes))]
 
         # setup the grid layout manager
         self.rowconfigure(0, weight=1)
@@ -207,19 +214,46 @@ class App(tk.Tk):
 
     # game controller
 
-    def getGameBoard(self, gameMode, isGameWithAI, size, isCaptureAuto, isBlownAuto):
-        self.game = Game(gameMode, isGameWithAI, size,
+    def getGameBoard(self, gameMode, isGameWithAI, size, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
+        self.game = Game(gameMode, isGameWithAI, size, timeLimit,
                          isCaptureAuto, isBlownAuto)
+
+        # game view
+        self.player1Stats = PlayerStats(
+            self, player1Name, self.currentTheme.getPlayerColor('1'), timeLimit)
+        self.player1Stats.grid(row=0, column=0)
+
+        self.player2Stats = PlayerStats(
+            self, player2Name, self.currentTheme.getPlayerColor('2'), timeLimit)
+        self.player2Stats.grid(row=0, column=2)
+
         self.boardView = BoardView(self, 800, gameMode,
-                                   self.eventHandler, self.themes[0])
+                                   self.eventHandler, self.currentTheme)
         print('game created')
 
         self.displayedFrame.destroy()
         self.renderBoard(self.game.getBoardLayout())
+        self.renderPlayerStats()
+        if(self.game.isTimeLimit):
+            self.toggleCountdown(self.game.playerTurn)
 
     def renderBoard(self, layout):
         self.boardView.createBoardSquares(layout, self.game.playerTurn)
         self.boardView.grid(row=0, column=1)
+
+    def renderPlayerStats(self):
+        self.player1Stats.setPieceCount(
+            self.game.board.getPlayerPiecesCount('1'))
+        self.player2Stats.setPieceCount(
+            self.game.board.getPlayerPiecesCount('2'))
+
+    def toggleCountdown(self, player):
+        if('1' in player):
+            self.player1Stats.runCountdown()
+            self.player2Stats.pauseCountdown()
+        else:
+            self.player1Stats.pauseCountdown()
+            self.player2Stats.runCountdown()
 
     def onPlayerPossibleMove(self, selectedPiece):
         self.renderBoard(
@@ -233,6 +267,9 @@ class App(tk.Tk):
             print('gameover')
 
         self.renderBoard(self.game.getBoardLayout())
+        self.renderPlayerStats()
+        if(self.game.isTimeLimit):
+            self.toggleCountdown(self.game.playerTurn)
 
 
 # * application init

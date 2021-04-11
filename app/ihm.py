@@ -1,4 +1,5 @@
 import tkinter as tk
+from typing import Text
 
 # *** IHM
 
@@ -29,7 +30,7 @@ class InputText(tk.Entry):
 
         self.variable = tk.StringVar(value=defaultText)
 
-        super().__init__(master=root)
+        super().__init__(master=root, textvariable=self.variable)
         self.pack()
 
     def getValue(self):
@@ -106,7 +107,8 @@ class GameSettings(tk.Frame):
 
         Label(self, text='Mode de jeu')
         gameMode = InputRadio(self, optionsList=[
-            ('Local', 'local'), ('En ligne', 'multi')])
+            ('Local', 'local'), ('En ligne', 'multi')
+        ])
 
         Label(self, text='Pseudo du joueur 2')
         player2Name = InputText(self, 'Joueur 2')
@@ -115,7 +117,16 @@ class GameSettings(tk.Frame):
 
         Label(self, text='Taille du damier')
         boardSize = InputRadio(self, optionsList=[
-            ('8 x 8', '8'), ('10 x 10', '10'), ('12 x 12', '12')])
+            ('8 x 8', '8'), ('10 x 10', '10'), ('12 x 12', '12')
+        ])
+
+        Label(self, text='Gestionnaire du temps')
+        timeLimit = InputRadio(self, optionsList=[
+            ('Illimité', '0'),
+            ('3 minutes', '180'),
+            ('5 minutes', '300'),
+            ('10 minutes', '600')
+        ])
 
         Label(self, text='Options')
         isCaptureAuto = InputCheckbox(
@@ -128,8 +139,11 @@ class GameSettings(tk.Frame):
                        gameMode.getValue(),
                        isGameWithAI.getValue(),
                        boardSize.getValue(),
+                       timeLimit.getValue(),
                        isCaptureAuto.getValue(),
-                       isBlownAuto.getValue()))
+                       isBlownAuto.getValue(),
+                       player1Name.getValue(),
+                       player2Name.getValue()))
 
 
 ####################### BOARD WIDGETS #######################
@@ -227,6 +241,61 @@ class PlayerSquare(Square):
 
 
 ##########i1############# TKINTER BOARD MANAGER #######################
+
+
+class Countdown(tk.Label):
+
+    def __init__(self, root, initialCount):
+
+        self.root = root
+        self.count = initialCount
+        self.label = Label(root, text=self.getFormattedTime(self.count))
+
+        super().__init__(master=self.root)
+
+    # count passed is in seconds
+    def getFormattedTime(self, count):
+        minutes, seconds = divmod(count, 60)
+        return '{:02d}:{:02d}'.format(minutes, seconds)
+
+    def start(self):
+        self.isCountdownRunning = True
+        self.run()
+
+    def run(self):
+        if(self.isCountdownRunning == True):
+            self.count -= 1
+            self.label.configure(text=self.getFormattedTime(self.count))
+            self.root.after(1000, self.run)
+
+    def stop(self):
+        self.isCountdownRunning = False
+
+
+class PlayerStats(tk.Frame):
+
+    def __init__(self, root, playerName, playerColor, timeLimit):
+        super().__init__(master=root)
+
+        if(timeLimit > 0):
+            self.countdown = Countdown(self, timeLimit)
+        else:
+            self.countdown = None
+
+        Label(self, text=playerName)
+        PlayerSquare(self, 75, None, '', playerColor,
+                     None, 0, 0, None).pack()
+
+        self.pieceCount = Label(self, text='')
+
+    def setPieceCount(self, count):
+        self.pieceCount.configure(text=count)
+
+    def runCountdown(self):
+        self.countdown.start()
+
+    def pauseCountdown(self):
+        self.countdown.stop()
 
 
 class BoardView(tk.Frame):
