@@ -17,6 +17,8 @@ class Game:
         # game options
         self.isCaptureAuto = isCaptureAuto
         self.isBlownAuto = isBlownAuto
+        # ? option when player must eat whenever possible, if blown piece rule not applied
+        self.isCaptureMandatory = not isBlownAuto
 
         if (timeLimit > 0):
             self.isTimeLimit = True
@@ -78,6 +80,8 @@ class Game:
             # after capture, player piece is now positionned on previous empty
             self.mustCapture = True
             return 'capture'
+        else:
+            self.mustCapture = False
 
         if (self.board.getWinner() != None):
             return 'gameover'
@@ -91,7 +95,6 @@ class Game:
             print('minimax evaluation:', minimaxEvaluation)
             self.playerAI.count = 0
         else:
-            self.mustCapture = False
             self.playerTurn = str(int(self.playerTurn) % 2 + 1)
             return 'turn'
 
@@ -255,7 +258,6 @@ class BoardData():
 
                     if ('E' in moveSquareValue):
                         if(capturableSquare != None):
-
                             captureRow, captureColumn, captureSquareValue = self.getProperty(
                                 capturableSquare)
                             moveType = 'c' + \
@@ -307,7 +309,7 @@ class BoardData():
 
         return moves
 
-    def getPieceMovesBoard(self, piece, mustCapture, lastMovedPiece):
+    def getPieceMovesBoard(self, piece, player, isCaptureMandatory, mustCapture, lastMovedPiece):
         pieceRow, pieceColumn, pieceValue = self.getProperty(piece)
 
         pieceBoardMoves = self.getLayout()
@@ -316,15 +318,22 @@ class BoardData():
 
         # TODO review two pieces comparison effectiveness
         if(mustCapture):
+            print('player must capture')
             movedPieceRow, movedPieceColumn, movedPieceValue = self.getProperty(
                 lastMovedPiece)
             if (pieceRow != movedPieceRow and pieceColumn != movedPieceColumn):
+                print('player can still capture on last moved piece')
                 return pieceBoardMoves
 
-        for pieceMove in self.getPossibleMoves(piece, mustCapture):
+        if (isCaptureMandatory and self.canPlayerCapture(player) and not self.canMultipleCapture(piece)):
+            print('player can capture on another piece')
+            return pieceBoardMoves
+
+        for pieceMove in self.getPossibleMoves(piece, (isCaptureMandatory and self.canMultipleCapture(piece))):
             row, column, moveType = self.getProperty(pieceMove)
             pieceBoardMoves[row][column] += '+' + moveType
 
+        print('getting normal moves')
         return pieceBoardMoves
 
     def movePiece(self, initialPosition, newPosition, isCaptureAuto):
@@ -390,7 +399,7 @@ class BoardData():
                 return (deltaRow == 1)
 
     def canPlayerCapture(self, playerValue):
-        return len(self.getPlayerMoves(playerValue, True)[1]) >= 1
+        return self.getPlayerMoves(playerValue, True)[2] >= 1
 
     # * AI func
 
@@ -465,7 +474,12 @@ class AIPlayer():
         boards = []
 
         playerPieces, playerMoves, playerMoveCount = board.getPlayerMoves(
-            player, False)
+            player, True)
+
+        # if there is no move where we must eat, get regular moves
+        if (playerMoveCount == 0):
+            playerPieces, playerMoves, playerMoveCount = board.getPlayerMoves(
+                player, False)
 
         for pieceIndex in range(len(playerPieces)):
             for moveIndex in range(len(playerMoves[pieceIndex])):

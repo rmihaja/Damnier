@@ -177,8 +177,9 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('Damnier')
-        self.minLength = 800
-        self.minsize(width=self.minLength, height=self.minLength)
+        self.minHeight = 800
+        self.minWidth = int(self.minHeight * 1.5)
+        self.minsize(width=self.minWidth, height=self.minHeight)
 
         # setup theme
         self.themes = [
@@ -276,7 +277,9 @@ class App(tk.Tk):
         if (self.game.isGameOver != True):
             self.renderBoard(
                 self.game.board.getPieceMovesBoard(
-                    selectedPiece, self.game.mustCapture, self.game.lastMovedPiece))
+                    selectedPiece, self.game.playerTurn,
+                    self.game.isCaptureMandatory,
+                    self.game.mustCapture, self.game.lastMovedPiece))
 
     def onPlayerMove(self, move):
         performedMove = self.game.setPlayerMove(move)
