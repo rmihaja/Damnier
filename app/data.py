@@ -9,7 +9,7 @@ from copy import deepcopy
 
 class Game:
 
-    def __init__(self, gameMode, isGameWithAI, size, timeLimit, isCaptureAuto, isBlownAuto):
+    def __init__(self, gameMode, isGameWithAI, size, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
 
         self.boardHistory = []
         self.moveHistory = []
@@ -22,6 +22,12 @@ class Game:
             self.isTimeLimit = True
         else:
             self.isTimeLimit = False
+
+        self.isGameOver = False
+
+        # player custom names
+        self.player1Name = player1Name
+        self.player2Name = player2Name
 
         # move setup
         self.mustCapture = False
@@ -49,6 +55,12 @@ class Game:
 
     def getBoardLayout(self):
         return self.board.getLayout()
+
+    def getPlayerName(self, playerValue):
+        if('1' in playerValue):
+            return self.player1Name
+        else:
+            return self.player2Name
 
     def setPlayerMove(self, move):
 
@@ -82,6 +94,8 @@ class Game:
             self.mustCapture = False
             self.playerTurn = str(int(self.playerTurn) % 2 + 1)
             return 'turn'
+
+        return ''
 
 
 ####################### BOARD STATE MANAGER #######################

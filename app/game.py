@@ -1,9 +1,13 @@
 
 import tkinter as tk
+from tkinter import messagebox
+
 import socketio as socketio
 import json as json
+
 from data import Game, AIPlayer
 from ihm import Home, GameSettings, BoardView, PlayerStats
+
 from math import inf
 from random import randrange
 import time as time
@@ -45,7 +49,7 @@ class EventHandler:
         self.selectedSquare = None
         self.serverConnection = None
 
-    # game event
+    # board events
 
     def onPlayerSquareSelected(self, event):
 
@@ -62,7 +66,7 @@ class EventHandler:
         self.app.onPlayerPossibleMove(selectedPiece)
 
     def onEmptySquareSelected(self, event):
-        # send move position value if a piece is selected and it is the player's turn
+
         selectedPiece = {
             'row': self.selectedSquare.row,
             'column': self.selectedSquare.column,
@@ -81,7 +85,12 @@ class EventHandler:
         # sending move data to model/server for validation
         self.app.onPlayerMove(moveProperty)
 
-    # home event
+    # game events
+
+    def onplayerTimerOut(self, player):
+        self.app.renderWinner(player, False)
+
+    # user interface events
 
     def onNewGameButton(self):
         self.app.getGameSettings()
@@ -216,15 +225,15 @@ class App(tk.Tk):
 
     def getGameBoard(self, gameMode, isGameWithAI, size, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
         self.game = Game(gameMode, isGameWithAI, size, timeLimit,
-                         isCaptureAuto, isBlownAuto)
+                         isCaptureAuto, isBlownAuto, player1Name, player2Name)
 
         # game view
         self.player1Stats = PlayerStats(
-            self, player1Name, self.currentTheme.getPlayerColor('1'), timeLimit)
+            self, player1Name, '1', self.currentTheme.getPlayerColor('1'), timeLimit, self.eventHandler)
         self.player1Stats.grid(row=0, column=0)
 
         self.player2Stats = PlayerStats(
-            self, player2Name, self.currentTheme.getPlayerColor('2'), timeLimit)
+            self, player2Name, '2', self.currentTheme.getPlayerColor('2'), timeLimit, self.eventHandler)
         self.player2Stats.grid(row=0, column=2)
 
         self.boardView = BoardView(self, 800, gameMode,
@@ -235,7 +244,7 @@ class App(tk.Tk):
         self.renderBoard(self.game.getBoardLayout())
         self.renderPlayerStats()
         if(self.game.isTimeLimit):
-            self.toggleCountdown(self.game.playerTurn)
+            self.toggleCountdowns(self.game.playerTurn)
 
     def renderBoard(self, layout):
         self.boardView.createBoardSquares(layout, self.game.playerTurn)
@@ -247,29 +256,37 @@ class App(tk.Tk):
         self.player2Stats.setPieceCount(
             self.game.board.getPlayerPiecesCount('2'))
 
-    def toggleCountdown(self, player):
-        if('1' in player):
-            self.player1Stats.runCountdown()
-            self.player2Stats.pauseCountdown()
+    def renderWinner(self, playerValue, isWinner):
+        self.game.isGameOver = True
+
+        if(isWinner):
+            winnerPlayer = self.game.getPlayerName(playerValue)
         else:
-            self.player1Stats.pauseCountdown()
-            self.player2Stats.runCountdown()
+            winnerPlayer = self.game.getPlayerName(
+                str(int(playerValue) % 2 + 1))
+
+        messagebox.showinfo(
+            'Game Over', 'Jeu terminé! Gagnant: ' + winnerPlayer)
+
+    def toggleCountdowns(self, playerTurn):
+        self.player1Stats.toggleCountdown(playerTurn)
+        self.player2Stats.toggleCountdown(playerTurn)
 
     def onPlayerPossibleMove(self, selectedPiece):
-        self.renderBoard(
-            self.game.board.getPieceMovesBoard(
-                selectedPiece, self.game.mustCapture, self.game.lastMovedPiece))
+        if (self.game.isGameOver != True):
+            self.renderBoard(
+                self.game.board.getPieceMovesBoard(
+                    selectedPiece, self.game.mustCapture, self.game.lastMovedPiece))
 
     def onPlayerMove(self, move):
-
         performedMove = self.game.setPlayerMove(move)
-        if (performedMove == 'gameover'):
-            print('gameover')
+        if ('gameover' in performedMove):
+            self.renderWinner(self.game.board.getWinner(), True)
 
         self.renderBoard(self.game.getBoardLayout())
         self.renderPlayerStats()
         if(self.game.isTimeLimit):
-            self.toggleCountdown(self.game.playerTurn)
+            self.toggleCountdowns(self.game.playerTurn)
 
 
 # * application init

@@ -123,6 +123,7 @@ class GameSettings(tk.Frame):
         Label(self, text='Gestionnaire du temps')
         timeLimit = InputRadio(self, optionsList=[
             ('Illimité', '0'),
+            ('10 secondes', '10'),
             ('3 minutes', '180'),
             ('5 minutes', '300'),
             ('10 minutes', '600')
@@ -245,11 +246,15 @@ class PlayerSquare(Square):
 
 class Countdown(tk.Label):
 
-    def __init__(self, root, initialCount):
+    def __init__(self, root, name, initialCount, eventHandler):
 
+        # ? set playerValue as countdown name for more versatile and independant component
+        self.name = name
         self.root = root
         self.count = initialCount
         self.label = Label(root, text=self.getFormattedTime(self.count))
+        self.eventHandler = eventHandler
+        self.clock = self.root.after(0, lambda: print('clock initialized'))
 
         super().__init__(master=self.root)
 
@@ -266,19 +271,27 @@ class Countdown(tk.Label):
         if(self.isCountdownRunning == True):
             self.count -= 1
             self.label.configure(text=self.getFormattedTime(self.count))
-            self.root.after(1000, self.run)
+            if (self.count <= 0):
+                self.stop()
+                self.eventHandler.onplayerTimerOut(self.name)
+            else:
+                self.clock = self.root.after(1000, self.run)
 
     def stop(self):
         self.isCountdownRunning = False
+        self.root.after_cancel(self.clock)
 
 
 class PlayerStats(tk.Frame):
 
-    def __init__(self, root, playerName, playerColor, timeLimit):
+    def __init__(self, root, playerName, playerValue, playerColor, timeLimit, eventHandler):
         super().__init__(master=root)
 
+        self.playerValue = playerValue
+
         if(timeLimit > 0):
-            self.countdown = Countdown(self, timeLimit)
+            self.countdown = Countdown(
+                self, playerValue, timeLimit, eventHandler)
         else:
             self.countdown = None
 
@@ -291,11 +304,11 @@ class PlayerStats(tk.Frame):
     def setPieceCount(self, count):
         self.pieceCount.configure(text=count)
 
-    def runCountdown(self):
-        self.countdown.start()
-
-    def pauseCountdown(self):
-        self.countdown.stop()
+    def toggleCountdown(self, playerTurn):
+        if (playerTurn in self.playerValue):
+            self.countdown.start()
+        else:
+            self.countdown.stop()
 
 
 class BoardView(tk.Frame):
