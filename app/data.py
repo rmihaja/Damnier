@@ -40,7 +40,7 @@ class Game:
         self.createGame(gameMode, boardSize, isGameWithAI)
         self.playerTurn = '1'
         # ? settings for multiplayer
-        self.isPlayerTurn = False
+        self.isPlayerTurn = True
 
         # storing game setup for online game (sharing setup)
         self.setups = {
@@ -62,7 +62,8 @@ class Game:
         # player vs AI game
         if (isGameWithAI):
             self.gameType = 'single_' + gameMode
-            self.playerAI = AIPlayer('2')
+            self.player2Name += ' (Ordinateur)'
+            self.playerAI = AIPlayer('2', 3)
 
         # player vs player game
         else:
@@ -70,22 +71,6 @@ class Game:
 
     def getBoardLayout(self):
         return self.board.getLayout()
-        # if(len(self.boardHistory) == 1):
-        #     # initial board
-        #     return self.boardHistory[0]
-        # else:
-        #     lastMoveBoard = deepcopy(self.boardHistory[-2])
-        #     currentBoard = deepcopy(self.boardHistory[-1])
-        #     for row in range(self.board.size):
-        #         for column in range(self.board.size):
-        #             if (lastMoveBoard[row][column] != currentBoard[row][column]):
-        #                 currentBoard[row][column] += '!'
-
-        #     print('board length', len(self.boardHistory))
-        #     print('original', self.boardHistory[-1])
-        #     print('modified', currentBoard)
-
-        #     return currentBoard
 
     def getPlayerName(self, playerValue):
         if('1' in playerValue):
@@ -118,11 +103,13 @@ class Game:
         if ('single' in self.gameType):
             # AI turn
             minimaxEvaluation, bestBoardMove = self.playerAI.minimax(
-                self.board, 3, -inf, inf, self.playerAI.playerValue)
+                self.board, self.playerAI.depth, -inf, inf, self.playerAI.playerValue)
             self.board.layout = bestBoardMove.getLayout()
             print('node evaluated:', self.playerAI.count)
             print('minimax evaluation:', minimaxEvaluation)
             self.playerAI.count = 0
+            if (self.board.getWinner() != None):
+                return 'gameover'
         else:
             return 'turnover'
 
@@ -183,8 +170,6 @@ class BoardData():
             'value': value
         }
 
-        return len(self.moveHistory)
-
     def getPlayerPiecesCount(self, player):
         return len(self.getPlayerPieces(player))
 
@@ -237,26 +222,25 @@ class BoardData():
         else:
             return None
 
-    def getDiagonalSquares(self, pieceRow, pieceColumn, rowOffset, columnOffset, depth):
-        row = trunc(pieceRow + rowOffset)
-        column = trunc(pieceColumn + columnOffset)
+    def getDiagonalSquares(self, pieceRow, pieceColumn, rowOffset, columnOffset):
 
-        # assure row column is inside of column
-        if(row in range(0, self.size) and column in range(0, self.size)):
+        squares = []
 
-            value = self.layout[row][column]
-            square = self.getDictionary(row, column, value)
+        row = pieceRow
+        column = pieceColumn
 
-            if (depth == 1):
-                return [square]
-            else:
-                # using recursion to get every squares
-                squares = [square]
-                squares.extend(self.getDiagonalSquares(
-                    row, column, rowOffset, columnOffset, depth - 1))
-                return squares
-        else:
-            return []
+        for i in range(self.size):
+            row = row + rowOffset
+            column = column + columnOffset
+            # assure row column is inside of column
+            if(row in range(0, self.size) and column in range(0, self.size)):
+
+                value = self.layout[row][column]
+                square = self.getDictionary(row, column, value)
+
+                squares.append(square)
+
+        return squares
 
     def getPossibleMoves(self, piece, mustCapture):
 
@@ -277,7 +261,7 @@ class BoardData():
             for offset in offsets:
                 rowOffset, columnOffset = offset
                 diagonalSquareMoves = self.getDiagonalSquares(
-                    pieceRow, pieceColumn, rowOffset, columnOffset, self.size)
+                    pieceRow, pieceColumn, rowOffset, columnOffset)
                 capturableSquare = None
                 for diagonalMove in diagonalSquareMoves:
 
@@ -311,7 +295,7 @@ class BoardData():
 
                 # getting capture move type
                 capturableRangeSquares = self.getDiagonalSquares(
-                    pieceRow, pieceColumn, offsetRow, offsetColumn, 2)
+                    pieceRow, pieceColumn, offsetRow, offsetColumn)
                 if (len(capturableRangeSquares) >= 1):
                     nearbySquareRow, nearbySquareColumn, nearbySquareValue = self.getProperty(
                         capturableRangeSquares[0])
@@ -322,7 +306,7 @@ class BoardData():
                                                   nearbySquareColumn, '')
                         moves.append(move)
                     # if else, we can try to capture
-                    elif(len(capturableRangeSquares) == 2 and nearbySquareValue != 'E' and pieceValue[0] != nearbySquareValue[0]):
+                    elif(len(capturableRangeSquares) >= 2 and nearbySquareValue != 'E' and pieceValue[0] != nearbySquareValue[0]):
                         # check if the square we can move to eat is empty
                         if ('E' in capturableRangeSquares[1]['value']):
                             emptyRow, emptyColumn, emptyValue = self.getProperty(
@@ -347,7 +331,6 @@ class BoardData():
         if(not isPlayerTurn):
             return pieceBoardMoves
 
-        # TODO review two pieces comparison effectiveness
         if(mustCapture):
             print('player must capture')
             movedPieceRow, movedPieceColumn, movedPieceValue = self.getProperty(
@@ -364,7 +347,6 @@ class BoardData():
             row, column, moveType = self.getProperty(pieceMove)
             pieceBoardMoves[row][column] += '+' + moveType
 
-        print('getting normal moves')
         return pieceBoardMoves
 
     def movePiece(self, initialPosition, newPosition, isCaptureAuto):
@@ -457,9 +439,10 @@ class BoardData():
 
 class AIPlayer():
 
-    def __init__(self, playerValue):
+    def __init__(self, playerValue, depth):
         self.playerValue = playerValue
         self.opponentValue = str(int(self.playerValue) % 2 + 1)
+        self.depth = depth
         self.count = 0
 
     def minimax(self, board, depth, alpha, beta, player):

@@ -1,16 +1,23 @@
 
+
 import tkinter as tk
 from tkinter import messagebox
 
 import socketio as socketio
 import json as json
 
-from data import Game, AIPlayer
-from ihm import Home, GameSettings, BoardView, PlayerStats
+from data import Game
+from ihm import Home, NewGameSettings, JoinGameSettings, Settings, BoardView, PlayerStats, GameStats
 
 from math import inf
 from random import randrange
-import time as time
+
+"""[CODE GUIDELINES]
+
+    Project files should to be read from the bottom (components loading before controller)
+    The main controller is App()
+
+"""
 
 # *** Game
 
@@ -19,7 +26,7 @@ import time as time
 
 class Theme:
 
-    def __init__(self, name, boardColor, squareColor, player1Color, player2Color, selectedPieceColor, selectedMoveColor):
+    def __init__(self, name, boardColor, squareColor, player1Color, player2Color, selectedPieceColor, selectedMoveColor, textColor):
 
         self.name = name
 
@@ -29,6 +36,7 @@ class Theme:
         self.player2Color = player2Color
         self.selectedPieceColor = selectedPieceColor
         self.selectedMoveColor = selectedMoveColor
+        self.textColor = textColor
 
     def getPlayerColor(self, player):
 
@@ -87,23 +95,33 @@ class EventHandler:
     # game events
 
     def onplayerTimerOut(self, player):
-        self.app.renderWinner(player, False)
+        self.app.displayWinner(player, False)
 
     # user interface events
 
     def onNewGameButton(self):
-        self.app.getGameSettings()
+        self.app.getNewGameSettings()
+
+    def onJoinGameButton(self):
+        self.app.getJoinGameSettings()
+
+    def onSettingsButton(self):
+        self.app.getSettings()
 
     def onJoinRoomButton(self, roomId):
         self.app.onPlayerJoinRoom(roomId)
 
-    def onSettingsButton(self):
-        pass
-
-    def onAboutButton(self):
-        pass
+    def onWindowClose(self):
+        isUserClose = messagebox.askyesno(
+            'Quitter', 'Etes-vous sûr de vouloir fermer le programme? Toute partie en cours sera perdu.')
+        if (isUserClose):
+            print('Closing app')
+            if(self.app.serverConnection != None):
+                self.app.serverConnection.socket.disconnect()
+            self.app.destroy()
 
     # game creation event
+
     def onStartNewGameButton(self, gameMode, isGameWithAI, boardSize, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
         self.app.getGameBoard(gameMode, True,
                               isGameWithAI,
@@ -132,25 +150,25 @@ class ServerConnection():
         # player is connected to socket server
         @self.socket.on('connect')
         def onConnect():
-            print('You in!')
+            print('You are connected to server!')
             self.app.onPlayerSocketConnected()
 
         # player get disconnected from socket server
         @self.socket.on('disconnect')
         def onDisconnect():
-            print('Oops, disconnected')
+            print('Oops, disconnected from server')
 
         # * room events
 
         @self.socket.on('room-create')
         def onRoomCreate(data):
             self.room = data
-            print('Yay, you create your own room! Welcome to',
-                  self.room)
+            self.app.gameStats.displayInfo(
+                'Inviter votre adversaire avec le code :\n ' + self.room)
 
         @self.socket.on('room-join')
         def onRoomJoin():
-            print('Someone joined! Sending game data')
+            print('Someone joined room! Sending game data')
             self.app.onPlayer2JoinedRoom()
 
         # * game events
@@ -184,9 +202,14 @@ class ServerConnection():
                 self.socket.connect('https://damnier.herokuapp.com/')
             except Exception as error:
                 print('Can\'t connect to remote server:', error)
-                messagebox.showerror(
-                    'Erreur', 'Impossible de se connecter au serveur. Réessayez ultérieurement')
-                self.socket = None
+                isRetry = messagebox.askretrycancel(
+                    'Erreur', 'Impossible de se connecter au serveur. Réessayez?\n\nNote : Si vous vous connectez pour la première fois au serveur distant, la première tentative sera un échec (le serveur utilisé ne permet pas une longue rétention).\nSoutenez notre projet pour qu\'on puisse acheter un meilleur serveur!')
+                print(isRetry)
+                if(isRetry):
+                    self.connectServer()
+                else:
+                    self = None
+                    app.getHome()
 
     def sendEvent(self, eventName):
         self.socket.emit(eventName, self.room)
@@ -204,26 +227,33 @@ class App(tk.Tk):
         super().__init__()
         self.title('Damnier')
         self.minHeight = 800
-        self.minWidth = int(self.minHeight * 1.5)
+        self.minWidth = int(self.minHeight * 1.6)
         self.minsize(width=self.minWidth, height=self.minHeight)
+        self.resizable(False, False)
 
         # setup theme
         self.themes = [
             Theme('default', '#FFF', '#010101', '#FD0002',
-                  '#010101', '#FFEB41', '#D9E0B0'),
+                  '#010101', '#FFEB41', '#D9E0B0', '#FFF'),
             Theme('Space blue', '#E2F1F9', '#031D7B',
-                  '#D1B9B5', '#FDDF83', '#FFEB41', '#D9E0B0'),
+                  '#D1B9B5', '#FDDF83', '#FFEB41', '#D9E0B0', '#FFF'),
             Theme('Classic brown', '#F5DEB3', '#AC7D58',
-                  '#000', '#FFF', '#FFEB41', '#D9E0B0')
+                  '#000', '#e0e0e0', '#FFEB41', '#D9E0B0', '#000')
         ]
 
+        # init game
+        self.game = None
+        self.serverConnection = None
+
         self.currentTheme = self.themes[randrange(0, len(self.themes))]
+        self.configure(bg=self.currentTheme.squareColor)
 
         # setup the grid layout manager
         self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
+        self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=0)
-        self.columnconfigure(2, weight=1)
 
         # init Event Handler
         self.eventHandler = EventHandler(self)
@@ -235,18 +265,36 @@ class App(tk.Tk):
     # interface controller
 
     def getHome(self):
-        home = Home(self, self.eventHandler)
-        self.renderFrame(home)
+        home = Home(self, self.currentTheme, self.eventHandler)
+        self.displayFrame(home)
 
-    def getGameSettings(self):
-        gameSettings = GameSettings(self, self.eventHandler)
-        self.renderFrame(gameSettings)
+    def getNewGameSettings(self):
+        newGameSettings = NewGameSettings(
+            self, self.currentTheme, self.eventHandler)
+        self.displayFrame(newGameSettings)
 
-    def renderFrame(self, frame):
+    def getJoinGameSettings(self):
+        joinGameSettings = JoinGameSettings(
+            self, self.currentTheme, self.eventHandler)
+        self.displayFrame(joinGameSettings)
+
+    def getSettings(self):
+        settings = Settings(
+            self, self.currentTheme, self.eventHandler)
+        self.displayFrame(settings)
+
+    def displayFrame(self, frame):
+        # destroy game view if there was a game
+        if (self.game != None):
+            self.boardView.destroy()
+            self.gameStats.destroy()
+            self.player1Stats.destroy()
+            self.player2Stats.destroy()
         if(self.displayedFrame != None):
             self.displayedFrame.destroy()
         self.displayedFrame = frame
-        self.displayedFrame.grid(row=0, column=0, columnspan=3, sticky='')
+        self.displayedFrame.grid(
+            row=0, column=0, columnspan=2, rowspan=3, sticky='')
 
     # game controller
 
@@ -254,13 +302,16 @@ class App(tk.Tk):
         self.game = Game(gameMode, isGameWithAI, boardSize, timeLimit,
                          isCaptureAuto, isBlownAuto, player1Name, player2Name)
 
-        self.player1Stats = PlayerStats(
-            self, player1Name, '1', self.currentTheme.getPlayerColor('1'), timeLimit, self.eventHandler)
-        self.player1Stats.grid(row=0, column=0)
-
         self.player2Stats = PlayerStats(
-            self, player2Name, '2', self.currentTheme.getPlayerColor('2'), timeLimit, self.eventHandler)
-        self.player2Stats.grid(row=0, column=2)
+            self, self.game.player2Name, '2', self.currentTheme.getPlayerColor('2'), timeLimit, self.eventHandler)
+        self.player2Stats.grid(row=0, column=0)
+
+        self.gameStats = GameStats(self)
+        self.gameStats.grid(row=1, column=0)
+
+        self.player1Stats = PlayerStats(
+            self, self.game.player1Name, '1', self.currentTheme.getPlayerColor('1'), timeLimit, self.eventHandler)
+        self.player1Stats.grid(row=2, column=0)
 
         self.boardView = BoardView(self, 800, gameMode,
                                    self.eventHandler, self.currentTheme)
@@ -269,28 +320,32 @@ class App(tk.Tk):
         if ('online' in gameMode):
             if(isGameCreator):
                 self.game.isGamePaused = True
-                self.game.isPlayerTurn = True
                 self.serverConnection = ServerConnection(self, True, None)
             else:
+                self.game.isPlayerTurn = False
                 # setup player two turn as '2' ~forever for the match
                 self.game.playerTurn = str(int(self.game.playerTurn) % 2 + 1)
+            self.toggleIsPlayerTurn()
+        else:
+            self.gameStats.displayTurn(
+                'Tour de ' + self.game.getPlayerName(self.game.playerTurn))
 
         self.displayedFrame.destroy()
-        self.renderBoard(self.game.getBoardLayout())
-        self.renderPlayerStats()
+        self.displayBoard(self.game.getBoardLayout())
+        self.displayPlayerStats()
         self.toggleCountdowns(self.game.playerTurn)
 
-    def renderBoard(self, layout):
+    def displayBoard(self, layout):
         self.boardView.createBoardSquares(layout, self.game.playerTurn)
-        self.boardView.grid(row=0, column=1)
+        self.boardView.grid(row=0, column=1, rowspan=3, padx=20, pady=20)
 
-    def renderPlayerStats(self):
+    def displayPlayerStats(self):
         self.player1Stats.setPieceCount(
             self.game.board.getPlayerPiecesCount('1'))
         self.player2Stats.setPieceCount(
             self.game.board.getPlayerPiecesCount('2'))
 
-    def renderWinner(self, playerValue, isWinner):
+    def displayWinner(self, playerValue, isWinner):
         self.game.isGameOver = True
 
         if(isWinner):
@@ -299,13 +354,23 @@ class App(tk.Tk):
             winnerPlayer = self.game.getPlayerName(
                 str(int(playerValue) % 2 + 1))
 
+        self.gameStats.displayInfo('Jeu terminé! Victoire à ' + winnerPlayer)
         messagebox.showinfo(
             'Game Over', 'Jeu terminé! Gagnant: ' + winnerPlayer)
+        self.getHome()
 
     def toggleCountdowns(self, playerTurn):
         if(self.game.isTimeLimit and not self.game.isGamePaused):
             self.player1Stats.toggleCountdown(playerTurn)
             self.player2Stats.toggleCountdown(playerTurn)
+
+    # toggle player turn for online game
+    def toggleIsPlayerTurn(self):
+        self.game.isPlayerTurn = not self.game.isPlayerTurn
+        if(self.game.isPlayerTurn):
+            self.gameStats.displayTurn('Votre tour')
+        else:
+            self.gameStats.displayTurn('Tour de l\'adversaire')
 
     # socket controller
 
@@ -325,9 +390,8 @@ class App(tk.Tk):
     # tkinter event controller
 
     def onPlayerPossibleMove(self, selectedPiece):
-        print('isPlayerTurn', self.game.isPlayerTurn)
         if (not self.game.isGamePaused and self.game.isGameOver != True):
-            self.renderBoard(
+            self.displayBoard(
                 self.game.board.getPieceMovesBoard(
                     selectedPiece, self.game.playerTurn, self.game.isPlayerTurn,
                     self.game.isCaptureMandatory,
@@ -340,17 +404,31 @@ class App(tk.Tk):
             self.serverConnection.sendEventData('move-player', move)
 
         moveResult = self.game.setPlayerMove(move)
+
         if ('gameover' in moveResult):
-            self.renderWinner(self.game.board.getWinner(), True)
+            self.displayWinner(self.game.board.getWinner(), True)
         elif('turnover' in moveResult):
+            self.gameStats.displayInfo('')
             if ('online' in self.game.gameType):
-                # toogle player turn
-                self.game.isPlayerTurn = not self.game.isPlayerTurn
+                self.toggleIsPlayerTurn()
             else:
                 self.game.playerTurn = str(int(self.game.playerTurn) % 2 + 1)
+                self.gameStats.displayTurn(
+                    'Tour de ' + self.game.getPlayerName(self.game.playerTurn))
+        elif ('capture' in moveResult):
+            if ('online' in self.game.gameType):
+                if (self.game.isPlayerTurn):
+                    self.gameStats.displayInfo(self.game.getPlayerName(
+                        'Vous pouvez encore manger un pion'))
+                else:
+                    self.gameStats.displayInfo(self.game.getPlayerName(
+                        'L\'adversaire peut encore manger un pion'))
+            else:
+                self.gameStats.displayInfo(self.game.getPlayerName(
+                    self.game.playerTurn) + ' peut encore manger un pion')
 
-        self.renderBoard(self.game.getBoardLayout())
-        self.renderPlayerStats()
+        self.displayBoard(self.game.getBoardLayout())
+        self.displayPlayerStats()
         self.toggleCountdowns(self.game.playerTurn)
 
 
@@ -359,6 +437,9 @@ if __name__ == "__main__":
 
     # launching app
     app = App()
+
+    # handling user close window
+    app.protocol("WM_DELETE_WINDOW", app.eventHandler.onWindowClose)
 
     # firing endless loop
     app.mainloop()

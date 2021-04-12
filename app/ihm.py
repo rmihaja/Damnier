@@ -1,5 +1,4 @@
 import tkinter as tk
-from typing import Text
 
 # *** IHM
 
@@ -10,28 +9,32 @@ from typing import Text
 
 class Label(tk.Label):
 
-    def __init__(self, root, text):
-        super().__init__(master=root, text=text, font='Arial 15')
-        self.pack()
+    def __init__(self, root, text, row=0, column=0, rowspan=1, columnspan=1, pady=20):
+        super().__init__(master=root, text=text, font='Helvetica 14')
+        self.grid(row=row, column=column,
+                  rowspan=rowspan, columnspan=columnspan, pady=(pady, 0))
 
 
 class Header(tk.Label):
 
-    def __init__(self, root, text):
-        super().__init__(master=root, text=text, font='Arial 30 bold')
-        self.pack()
+    def __init__(self, root, text, row=0, column=0, rowspan=1, columnspan=1):
+        super().__init__(master=root, text=text, font='Helvetica 32 bold')
+        self.grid(row=row, column=column,
+                  rowspan=rowspan, columnspan=columnspan, pady=(25, 50))
 
 # * inputs
 
 
 class InputText(tk.Entry):
 
-    def __init__(self, root, defaultText):
+    def __init__(self, root, defaultText, row=0, column=0, rowspan=1, columnspan=1):
 
         self.variable = tk.StringVar(value=defaultText)
 
-        super().__init__(master=root, textvariable=self.variable)
-        self.pack()
+        super().__init__(master=root, textvariable=self.variable,
+                         )
+        self.grid(row=row, column=column,
+                  rowspan=rowspan, columnspan=columnspan, padx=(20, 0), pady=10, ipadx=10, ipady=5)
 
     def getValue(self):
         return self.variable.get()
@@ -39,16 +42,19 @@ class InputText(tk.Entry):
 
 class InputRadio(tk.Radiobutton):
 
-    def __init__(self, root, optionsList):
+    def __init__(self, root, optionsList, theme, command=None, row=0, column=0, rowspan=1, columnspan=1):
 
         # define first option as default selected input
         self.variable = tk.StringVar(value=optionsList[0][1])
 
-        for option in optionsList:
-            optionText, optionValue = option
+        for optionIndex in range(len(optionsList)):
+            optionText, optionValue = optionsList[optionIndex]
             super().__init__(master=root, text=optionText,
+                             command=command,
+                             indicator=0,
                              value=optionValue, variable=self.variable)
-            self.pack()
+            self.grid(row=row, column=optionIndex,
+                      rowspan=rowspan, columnspan=columnspan)
 
     def getValue(self):
         return self.variable.get()
@@ -56,7 +62,7 @@ class InputRadio(tk.Radiobutton):
 
 class InputCheckbox(tk.Checkbutton):
 
-    def __init__(self, root, text):
+    def __init__(self, root, text, row=0, column=0, rowspan=1, columnspan=1):
 
         self.variable = tk.BooleanVar()
 
@@ -64,7 +70,8 @@ class InputCheckbox(tk.Checkbutton):
                          onvalue=True,
                          offvalue=False,
                          variable=self.variable)
-        self.pack()
+        self.grid(row=row, column=column,
+                  rowspan=rowspan, columnspan=columnspan)
 
     def getValue(self):
         return self.variable.get()
@@ -72,9 +79,49 @@ class InputCheckbox(tk.Checkbutton):
 
 class Button(tk.Button):
 
-    def __init__(self, root, text, command):
-        super().__init__(master=root, text=text, command=command)
-        self.pack()
+    def __init__(self, root, text, command, theme, row=0, column=0, rowspan=1, columnspan=1):
+
+        self.theme = theme
+        super().__init__(master=root, text=text, command=command,
+                         background=self.theme.squareColor, activebackground=self.theme.player1Color,
+                         foreground=self.theme.textColor, activeforeground=self.theme.player2Color,
+                         font='Helvetica 14', width=20, height=2)
+        self.grid(row=row, column=column,
+                  rowspan=rowspan, columnspan=columnspan, padx=20, pady=20)
+
+        # add intern event listener for user on hover
+        self.bind("<Enter>", self.onMouseEnter)
+        self.bind("<Leave>", self.onMouseLeave)
+
+    def onMouseEnter(self, event):
+        self.configure(background=self.theme.selectedPieceColor,
+                       foreground=self.theme.squareColor)
+
+    def onMouseLeave(self, event):
+        self.configure(background=self.theme.squareColor,
+                       foreground=self.theme.textColor)
+
+
+class InputRadioDiv(tk.Frame):
+
+    def __init__(self, root, optionsList, theme, command=None, row=0, column=0, rowspan=1, columnspan=1):
+        super().__init__(master=root)
+        self.inputRadio = InputRadio(
+            self, optionsList=optionsList, theme=theme, command=command)
+        self.grid(row=row, column=column,
+                  rowspan=rowspan, columnspan=columnspan)
+
+
+class InputFormDiv(tk.Frame):
+
+    def __init__(self, root, labelValue, inputDefaultValue, row=0, column=0, rowspan=1, columnspan=1):
+        super().__init__(master=root)
+        self.label = Label(self, text=labelValue,
+                           column=0, pady=0)
+        self.inputText = InputText(self, defaultText=inputDefaultValue,
+                                   column=1)
+        self.grid(row=row, column=column,
+                  rowspan=rowspan, columnspan=columnspan, pady=(20, 0))
 
 
 ####################### TKINTER INTERFACE MANAGER #######################
@@ -82,72 +129,129 @@ class Button(tk.Button):
 
 class Home(tk.Frame):
 
-    def __init__(self, root, eventHandler):
+    def __init__(self, root, theme, eventHandler):
 
         # Home Frame value
-        super().__init__(master=root)
+        super().__init__(master=root, padx=100)
 
         # element init
         Header(self, text='Damnier!')
         Button(self, text='Nouvelle partie',
-               command=eventHandler.onNewGameButton)
-        roomId = InputText(self, '')
+               command=eventHandler.onNewGameButton, theme=theme,
+               row=1)
         Button(self, text='Rejoindre une partie',
-               command=lambda: eventHandler.onJoinRoomButton(roomId.getValue()))
-        Button(self, text='Paramètres',
-               command=eventHandler.onSettingsButton)
-        Button(self, text='A propos', command=eventHandler.onAboutButton)
+               command=eventHandler.onJoinGameButton, theme=theme,
+               row=2)
 
 
-class GameSettings(tk.Frame):
+class NewGameSettings(tk.Frame):
 
-    def __init__(self, root, eventHandler):
-        super().__init__(master=root)
-        Header(self, text='Nouvelle partie')
+    def __init__(self, root, theme, eventHandler):
+        super().__init__(master=root, padx=100)
 
-        Label(self, text='Votre pseudo')
-        player1Name = InputText(self, 'Joueur 1')
-
-        Label(self, text='Mode de jeu')
-        gameMode = InputRadio(self, optionsList=[
+        # data init
+        gameModesOptions = [
             ('Local', 'local'), ('En ligne', 'online')
-        ])
+        ]
 
-        Label(self, text='Pseudo du joueur 2')
-        player2Name = InputText(self, 'Joueur 2')
-        isGameWithAI = InputCheckbox(
-            self, text='Jouer contre l\'ordinateur')
+        boardSizesOptions = [
+            ('8 x 8', '8'), ('10 x 10', '10')
+        ]
 
-        Label(self, text='Taille du damier')
-        boardSize = InputRadio(self, optionsList=[
-            ('8 x 8', '8'), ('10 x 10', '10'), ('12 x 12', '12')
-        ])
-
-        Label(self, text='Gestionnaire du temps')
-        timeLimit = InputRadio(self, optionsList=[
+        # time value count are converted in seconds
+        timeLimitsOptions = [
             ('Illimité', '0'),
-            ('10 secondes', '10'),
             ('3 minutes', '180'),
             ('5 minutes', '300'),
             ('10 minutes', '600')
-        ])
+        ]
 
-        Label(self, text='Options')
-        isCaptureAuto = InputCheckbox(
-            self, text='Prise de plusieurs pions automatique')
-        isBlownAuto = InputCheckbox(self, text='Pions soufflés')
+        # element init
 
-        Button(self, text='Commencer',
+        Header(self, text='Nouvelle partie')
+
+        self.player1Name = InputFormDiv(self, 'Votre pseudo:', 'Joueur 1',
+                                        row=1).inputText
+
+        Label(self, text='Mode de jeu',
+              row=2)
+        self.gameMode = InputRadioDiv(self, gameModesOptions, theme, command=self.onPlayerSelectGameModeOption,
+                                      row=3).inputRadio
+
+        self.player2Name = InputFormDiv(self, 'Pseudo du joueur 2:', 'Joueur 2',
+                                        row=4).inputText
+
+        self.isGameWithAI = InputCheckbox(
+            self, text='Jouer contre l\'ordinateur',
+            row=5)
+
+        Label(self, text='Taille du damier',
+              row=6)
+        self.boardSize = InputRadioDiv(self, boardSizesOptions, theme,
+                                       row=7).inputRadio
+
+        Label(self, text='Gestionnaire du temps',
+              row=8)
+        self.timeLimit = InputRadioDiv(self, timeLimitsOptions, theme,
+                                       row=9).inputRadio
+
+        Label(self, text='Options',
+              row=10)
+        self.isCaptureAuto = InputCheckbox(
+            self, text='Prise de plusieurs pions automatique',
+            row=11)
+        self.isBlownAuto = InputCheckbox(self, text='Pions soufflés',
+                                         row=12)
+
+        Button(self, text='Commencer', theme=theme,
                command=lambda:
                    eventHandler.onStartNewGameButton(
-                       gameMode.getValue(),
-                       isGameWithAI.getValue(),
-                       boardSize.getValue(),
-                       timeLimit.getValue(),
-                       isCaptureAuto.getValue(),
-                       isBlownAuto.getValue(),
-                       player1Name.getValue(),
-                       player2Name.getValue()))
+                       self.gameMode.getValue(),
+                       self.isGameWithAI.getValue(),
+                       self.boardSize.getValue(),
+                       self.timeLimit.getValue(),
+                       self.isCaptureAuto.getValue(),
+                       self.isBlownAuto.getValue(),
+                       self.player1Name.getValue(),
+                       self.player2Name.getValue()),
+                   row=13)
+
+    # event that is only applicable to View
+    def onPlayerSelectGameModeOption(self):
+        if ('online' in self.gameMode.getValue()):
+            self.isGameWithAI.variable.set(False)
+            self.isGameWithAI.configure(state='disabled')
+        else:
+            self.isGameWithAI.configure(state='active')
+
+
+class JoinGameSettings(tk.Frame):
+
+    def __init__(self, root, theme, eventHandler):
+        super().__init__(master=root, padx=100)
+        Header(self, text='Rejoindre une partie',
+               row=0, column=0)
+        roomId = InputFormDiv(self, 'Code de la partie:',
+                              '', row=1).inputText
+        Button(self, text='Rejoindre',
+               command=lambda: eventHandler.onJoinRoomButton(roomId.getValue()), theme=theme,
+               row=2, column=0)
+
+# TODO add settings
+
+
+class Settings(tk.Frame):
+
+    def __init__(self, root, theme, eventHandler):
+        super().__init__(master=root, padx=100)
+        Header(self, text='Paramètres',
+               row=0, column=0)
+
+        Label(self, text='Theme du jeu',
+              row=1, column=0)
+
+        InputCheckbox(self, text='Activer le son',
+                      row=2, column=0)
 
 
 ####################### BOARD WIDGETS #######################
@@ -158,7 +262,7 @@ class Square(tk.Canvas):
     def __init__(self, root, size, color, row, column):
         # ? bd removes Canvas default margin
         super().__init__(master=root, width=size, height=size,
-                         bg=color, bd=-2, highlightbackground=color)
+                         bg=color, border=-2, highlightbackground=color)
 
         self.row = row
         self.column = column
@@ -178,7 +282,7 @@ class Piece():
         # add queen overlay if piece is a queen
         if ('*' in value):
             squareParent.create_line(self.getCrownCorners(
-                parentSize, (35, 65), (30, 40), (40, 45), 35), fill='white', width=3)
+                parentSize, (0.35 * parentSize, 0.65 * parentSize), (0.3 * parentSize, 0.4 * parentSize), (0.4 * parentSize, 0.45 * parentSize), 0.35 * parentSize), fill='white', width=3)
 
         # if there is eventHandler, piece belongs to player and is selectable
         if (eventHandler != None):
@@ -255,7 +359,8 @@ class Countdown(tk.Label):
         self.name = name
         self.root = root
         self.count = initialCount
-        self.label = Label(root, text=self.getFormattedTime(self.count))
+        self.label = Label(root, text=self.getFormattedTime(
+            self.count), columnspan=2)
         self.eventHandler = eventHandler
         self.clock = self.root.after(0, lambda: print('clock initialized'))
 
@@ -288,7 +393,7 @@ class Countdown(tk.Label):
 class PlayerStats(tk.Frame):
 
     def __init__(self, root, playerName, playerValue, playerColor, timeLimit, eventHandler):
-        super().__init__(master=root)
+        super().__init__(master=root, padx=50)
 
         self.playerValue = playerValue
 
@@ -298,11 +403,13 @@ class PlayerStats(tk.Frame):
         else:
             self.countdown = None
 
-        Label(self, text=playerName)
-        PlayerSquare(self, 75, None, '', playerColor,
-                     None, 0, 0, None).pack()
+        Label(self, text=playerName, row=1, columnspan=2)
 
-        self.pieceCount = Label(self, text='')
+        PlayerSquare(self, 75, None, '', playerColor,
+                     None, 0, 0, None).grid(row=2, column=0)
+        self.pieceCount = Label(self, text='', row=2, column=1, pady=0)
+
+        self.infoLabel = Label(self, '', pady=0, row=3, columnspan=2)
 
     def setPieceCount(self, count):
         self.pieceCount.configure(text=count)
@@ -312,6 +419,21 @@ class PlayerStats(tk.Frame):
             self.countdown.start()
         else:
             self.countdown.stop()
+
+
+class GameStats(tk.Frame):
+
+    def __init__(self, root):
+        super().__init__(master=root, padx=20, pady=10)
+
+        self.turnLabel = Label(self, '', pady=0, row=0)
+        self.infoLabel = Label(self, '', pady=0, row=1)
+
+    def displayTurn(self, turn):
+        self.turnLabel.configure(text=turn)
+
+    def displayInfo(self, message):
+        self.infoLabel.configure(text=message)
 
 
 class BoardView(tk.Frame):
