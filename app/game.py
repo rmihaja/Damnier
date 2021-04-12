@@ -47,7 +47,6 @@ class EventHandler:
     def __init__(self, app):
         self.app = app
         self.selectedSquare = None
-        self.serverConnection = None
 
     # board events
 
@@ -83,7 +82,7 @@ class EventHandler:
         }
 
         # sending move data to model/server for validation
-        self.app.onPlayerMove(moveProperty)
+        self.app.onPlayerMove(moveProperty, True)
 
     # game events
 
@@ -95,6 +94,9 @@ class EventHandler:
     def onNewGameButton(self):
         self.app.getGameSettings()
 
+    def onJoinRoomButton(self, roomId):
+        self.app.onPlayerJoinRoom(roomId)
+
     def onSettingsButton(self):
         pass
 
@@ -103,7 +105,8 @@ class EventHandler:
 
     # game creation event
     def onStartNewGameButton(self, gameMode, isGameWithAI, boardSize, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
-        self.app.getGameBoard(gameMode, isGameWithAI,
+        self.app.getGameBoard(gameMode, True,
+                              isGameWithAI,
                               int(boardSize),
                               int(timeLimit),
                               isCaptureAuto, isBlownAuto,
@@ -112,12 +115,66 @@ class EventHandler:
 
 ####################### SERVER COMMUNICATION MANAGER ######################
 
+
 class ServerConnection():
 
-    def __init__(self, app):
+    def __init__(self, app, isGameCreator, roomId):
         self.app = app
-        self.socket = socketio.Client()
+        self.isGameCreator = isGameCreator
+        self.room = roomId
 
+        # server init
+        self.socket = socketio.Client()
+        self.connectServer()
+
+        # * connection events
+
+        # player is connected to socket server
+        @self.socket.on('connect')
+        def onConnect():
+            print('You in!')
+            self.app.onPlayerSocketConnected()
+
+        # player get disconnected from socket server
+        @self.socket.on('disconnect')
+        def onDisconnect():
+            print('Oops, disconnected')
+
+        # * room events
+
+        @self.socket.on('room-create')
+        def onRoomCreate(data):
+            self.room = data
+            print('Yay, you create your own room! Welcome to',
+                  self.room)
+
+        @self.socket.on('room-join')
+        def onRoomJoin():
+            print('Someone joined! Sending game data')
+            self.app.onPlayer2JoinedRoom()
+
+        # * game events
+
+        @self.socket.on('game-setup')
+        def onGameSetup(data):
+            # turn data received from server to python readable data
+            formattedData = json.loads(data)
+            self.app.getGameBoard(formattedData['gameMode'],
+                                  False,
+                                  formattedData['isGameWithAI'],
+                                  formattedData['boardSize'],
+                                  formattedData['timeLimit'],
+                                  formattedData['isCaptureAuto'],
+                                  formattedData['isBlownAuto'],
+                                  formattedData['player1Name'],
+                                  formattedData['player2Name'])
+
+        @self.socket.on('player-move')
+        def onPlayerMove(data):
+            move = json.loads(data)
+            self.app.onPlayerMove(move, False)
+
+    def connectServer(self):
         # connecting to socket server
         try:
             self.socket.connect('http://localhost:5500')
@@ -127,47 +184,16 @@ class ServerConnection():
                 self.socket.connect('https://damnier.herokuapp.com/')
             except Exception as error:
                 print('Can\'t connect to remote server:', error)
-                self.app.infoLabel.notify(
-                    'Erreur: Impossible de se connecter au serveur')
+                messagebox.showerror(
+                    'Erreur', 'Impossible de se connecter au serveur. Réessayez ultérieurement')
                 self.socket = None
 
-        # * server communication handlers
+    def sendEvent(self, eventName):
+        self.socket.emit(eventName, self.room)
 
-        #  connection events
-
-        # player is connected to socket server
-        @self.socket.on('connect')
-        def onConnect():
-            print('You in!')
-
-        # player get disconnected from socket server
-        @self.socket.on('disconnect')
-        def onDisconnect():
-            print('Oops, disconnected')
-
-        #  game events
-
-        @self.socket.on('playersetup')
-        def onPlayerSetup(data):
-            print('Congrats! You are player ' + str(json.loads(data)))
-            self.app.setPlayerProperty(json.loads(data))
-            self.app.createGame()
-            self.app.infoLabel.notify(
-                'Connection au serveur réussi. En attente d\'un autre joueur')
-
-        @self.socket.on('loadboard')
-        def onLoadboard(data):
-            self.app.renderBoard(json.loads(data))
-
-        @self.socket.on('playerturn')
-        def onPlayerTurn(data):
-            self.app.setPlayerTurn(json.loads(data))
-
-        @self.socket.on('captureopponent')
-        def onCaptureOpponent():
-            print('Gotta capture another piece to end your turn!')
-            self.app.infoLabel.notify(
-                'C\'est votre tour! Vous pouvez encore mangez!')
+    def sendEventData(self, eventName, eventData):
+        # send data as tuple, server will receive it as separate arguments
+        self.socket.emit(eventName, (self.room, json.dumps(eventData)))
 
 
 ####################### APPLICATION MANAGER #######################
@@ -224,11 +250,10 @@ class App(tk.Tk):
 
     # game controller
 
-    def getGameBoard(self, gameMode, isGameWithAI, size, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
-        self.game = Game(gameMode, isGameWithAI, size, timeLimit,
+    def getGameBoard(self, gameMode, isGameCreator, isGameWithAI, boardSize, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
+        self.game = Game(gameMode, isGameWithAI, boardSize, timeLimit,
                          isCaptureAuto, isBlownAuto, player1Name, player2Name)
 
-        # game view
         self.player1Stats = PlayerStats(
             self, player1Name, '1', self.currentTheme.getPlayerColor('1'), timeLimit, self.eventHandler)
         self.player1Stats.grid(row=0, column=0)
@@ -241,11 +266,19 @@ class App(tk.Tk):
                                    self.eventHandler, self.currentTheme)
         print('game created')
 
+        if ('online' in gameMode):
+            if(isGameCreator):
+                self.game.isGamePaused = True
+                self.game.isPlayerTurn = True
+                self.serverConnection = ServerConnection(self, True, None)
+            else:
+                # setup player two turn as '2' ~forever for the match
+                self.game.playerTurn = str(int(self.game.playerTurn) % 2 + 1)
+
         self.displayedFrame.destroy()
         self.renderBoard(self.game.getBoardLayout())
         self.renderPlayerStats()
-        if(self.game.isTimeLimit):
-            self.toggleCountdowns(self.game.playerTurn)
+        self.toggleCountdowns(self.game.playerTurn)
 
     def renderBoard(self, layout):
         self.boardView.createBoardSquares(layout, self.game.playerTurn)
@@ -270,26 +303,55 @@ class App(tk.Tk):
             'Game Over', 'Jeu terminé! Gagnant: ' + winnerPlayer)
 
     def toggleCountdowns(self, playerTurn):
-        self.player1Stats.toggleCountdown(playerTurn)
-        self.player2Stats.toggleCountdown(playerTurn)
+        if(self.game.isTimeLimit and not self.game.isGamePaused):
+            self.player1Stats.toggleCountdown(playerTurn)
+            self.player2Stats.toggleCountdown(playerTurn)
+
+    # socket controller
+
+    def onPlayerSocketConnected(self):
+        if(self.serverConnection.isGameCreator):
+            self.serverConnection.sendEvent('create-room')
+        else:
+            self.serverConnection.sendEvent('join-room')
+
+    def onPlayerJoinRoom(self, roomId):
+        self.serverConnection = ServerConnection(self, False, roomId)
+
+    def onPlayer2JoinedRoom(self):
+        self.serverConnection.sendEventData('setup-game', self.game.setups)
+        self.game.isGamePaused = False
+
+    # tkinter event controller
 
     def onPlayerPossibleMove(self, selectedPiece):
-        if (self.game.isGameOver != True):
+        print('isPlayerTurn', self.game.isPlayerTurn)
+        if (not self.game.isGamePaused and self.game.isGameOver != True):
             self.renderBoard(
                 self.game.board.getPieceMovesBoard(
-                    selectedPiece, self.game.playerTurn,
+                    selectedPiece, self.game.playerTurn, self.game.isPlayerTurn,
                     self.game.isCaptureMandatory,
                     self.game.mustCapture, self.game.lastMovedPiece))
 
-    def onPlayerMove(self, move):
-        performedMove = self.game.setPlayerMove(move)
-        if ('gameover' in performedMove):
+    def onPlayerMove(self, move, isInitiator):
+
+        # sending the move to other player as well for asynchronous validation
+        if ('online' in self.game.gameType and isInitiator):
+            self.serverConnection.sendEventData('move-player', move)
+
+        moveResult = self.game.setPlayerMove(move)
+        if ('gameover' in moveResult):
             self.renderWinner(self.game.board.getWinner(), True)
+        elif('turnover' in moveResult):
+            if ('online' in self.game.gameType):
+                # toogle player turn
+                self.game.isPlayerTurn = not self.game.isPlayerTurn
+            else:
+                self.game.playerTurn = str(int(self.game.playerTurn) % 2 + 1)
 
         self.renderBoard(self.game.getBoardLayout())
         self.renderPlayerStats()
-        if(self.game.isTimeLimit):
-            self.toggleCountdowns(self.game.playerTurn)
+        self.toggleCountdowns(self.game.playerTurn)
 
 
 # * application init

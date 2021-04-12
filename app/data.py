@@ -9,7 +9,7 @@ from copy import deepcopy
 
 class Game:
 
-    def __init__(self, gameMode, isGameWithAI, size, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
+    def __init__(self, gameMode, isGameWithAI, boardSize, timeLimit, isCaptureAuto, isBlownAuto, player1Name, player2Name):
 
         self.boardHistory = []
         self.moveHistory = []
@@ -26,6 +26,7 @@ class Game:
             self.isTimeLimit = False
 
         self.isGameOver = False
+        self.isGamePaused = False
 
         # player custom names
         self.player1Name = player1Name
@@ -36,8 +37,22 @@ class Game:
         self.lastMovedPiece = None
 
         # init game
-        self.createGame(gameMode, size, isGameWithAI)
+        self.createGame(gameMode, boardSize, isGameWithAI)
         self.playerTurn = '1'
+        # ? settings for multiplayer
+        self.isPlayerTurn = False
+
+        # storing game setup for online game (sharing setup)
+        self.setups = {
+            'gameMode': gameMode,
+            'isGameWithAI': isGameWithAI,
+            'boardSize': boardSize,
+            'timeLimit': timeLimit,
+            'isCaptureAuto': isCaptureAuto,
+            'isBlownAuto': isBlownAuto,
+            'player1Name': player1Name,
+            'player2Name': player2Name
+        }
 
     def createGame(self, gameMode, size, isGameWithAI):
 
@@ -52,11 +67,25 @@ class Game:
         # player vs player game
         else:
             self.gameType = 'multi_' + gameMode
-            if('online' in gameMode):
-                self.serverConnection = ServerConnection(self.app)
 
     def getBoardLayout(self):
         return self.board.getLayout()
+        # if(len(self.boardHistory) == 1):
+        #     # initial board
+        #     return self.boardHistory[0]
+        # else:
+        #     lastMoveBoard = deepcopy(self.boardHistory[-2])
+        #     currentBoard = deepcopy(self.boardHistory[-1])
+        #     for row in range(self.board.size):
+        #         for column in range(self.board.size):
+        #             if (lastMoveBoard[row][column] != currentBoard[row][column]):
+        #                 currentBoard[row][column] += '!'
+
+        #     print('board length', len(self.boardHistory))
+        #     print('original', self.boardHistory[-1])
+        #     print('modified', currentBoard)
+
+        #     return currentBoard
 
     def getPlayerName(self, playerValue):
         if('1' in playerValue):
@@ -95,8 +124,7 @@ class Game:
             print('minimax evaluation:', minimaxEvaluation)
             self.playerAI.count = 0
         else:
-            self.playerTurn = str(int(self.playerTurn) % 2 + 1)
-            return 'turn'
+            return 'turnover'
 
         return ''
 
@@ -309,12 +337,15 @@ class BoardData():
 
         return moves
 
-    def getPieceMovesBoard(self, piece, player, isCaptureMandatory, mustCapture, lastMovedPiece):
+    def getPieceMovesBoard(self, piece, player, isPlayerTurn, isCaptureMandatory, mustCapture, lastMovedPiece):
         pieceRow, pieceColumn, pieceValue = self.getProperty(piece)
 
         pieceBoardMoves = self.getLayout()
 
         pieceBoardMoves[pieceRow][pieceColumn] += '\''
+
+        if(not isPlayerTurn):
+            return pieceBoardMoves
 
         # TODO review two pieces comparison effectiveness
         if(mustCapture):

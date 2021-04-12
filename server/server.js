@@ -1,11 +1,5 @@
-const { Socket } = require('socket.io');
-const Game = require('./model/game'); 
 
-// * variable init 
-let waitingRoom = [];
-let game;
-
-// * heroku server config 
+// * heroku server config
 let port = process.env.PORT;
 // if working with remote server, port will have value
 if (port == null || port == "") {
@@ -18,28 +12,33 @@ if (port == null || port == "") {
 const io = require('socket.io')(port);
 
 io.on('connection', socket => {
-    console.log(`Someone went in! There are now ${waitingRoom.length + 1} waiting`);
+    console.log(`Someone went in!`);
     
-    // temporarely storing player socket while waiting for opponent
-    waitingRoom.push(socket);
+    socket.on('create-room', () => {
+        roomId = generateId();
+        console.log(`Room ${roomId} created for player`);
+        socket.join(roomId);
+        io.to(roomId).emit('room-create', roomId);
+    });
 
-    // * event emitters
+    socket.on('join-room', roomId => {
+        socket.join(roomId);
+        console.log(`Someone joined room ${roomId}, alerting initiator to send game setup data`);
+        socket.to(roomId).emit('room-join');
+    });
 
-    // send player value if player'1' or '2'
-    socket.emit('playersetup', JSON.stringify(waitingRoom.length.toString()))
-    
-    // initiate game when 2 player are connected
-    if (waitingRoom.length == 2) {
-        game = new Game(8, waitingRoom[0], waitingRoom[1]);
-        waitingRoom = [];
-        setTimeout(() => game.updatePlayersBoard(), 500);
-        console.log('Game started!')
-        console.log(`There are now ${waitingRoom.length} waiting`)
-        game.incrementTurn();
-    }
+    socket.on('setup-game', (roomId, data) => {
+        console.log(`${roomId}: sending back setup data`);
+        socket.to(roomId).emit('game-setup', data);
+    });
 
-    // * event handlers
+    socket.on('move-player', (roomId, data) => {
+        socket.to(roomId).emit('player-move', data);
+    });
 
-    // player plays a movement
-    socket.on('move', data => game.onPlayerMove(JSON.parse(data)));
 })
+
+const generateId = () => {
+    // generate unique id of base 16 of length 4  
+    return Math.random().toString(16).substr(2, 4);
+}

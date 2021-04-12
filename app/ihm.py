@@ -91,6 +91,9 @@ class Home(tk.Frame):
         Header(self, text='Damnier!')
         Button(self, text='Nouvelle partie',
                command=eventHandler.onNewGameButton)
+        roomId = InputText(self, '')
+        Button(self, text='Rejoindre une partie',
+               command=lambda: eventHandler.onJoinRoomButton(roomId.getValue()))
         Button(self, text='Paramètres',
                command=eventHandler.onSettingsButton)
         Button(self, text='A propos', command=eventHandler.onAboutButton)
@@ -107,7 +110,7 @@ class GameSettings(tk.Frame):
 
         Label(self, text='Mode de jeu')
         gameMode = InputRadio(self, optionsList=[
-            ('Local', 'local'), ('En ligne', 'multi')
+            ('Local', 'local'), ('En ligne', 'online')
         ])
 
         Label(self, text='Pseudo du joueur 2')
@@ -344,7 +347,7 @@ class BoardView(tk.Frame):
                         playerValue, squareValue, row, column, self.eventHandler)
 
                     # flip layout filling if the player is player2 for first pov
-                    if (self.isLocalGame == False and self.playerValue == '2'):
+                    if (self.isLocalGame == False and playerValue == '2'):
                         square.grid(row=self.boardSize - row,
                                     column=self.boardSize - column)
                     else:
