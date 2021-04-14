@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nous contacter</title>
+    <link rel="stylesheet" href="style.css">
+
+    <link href="https://api.fontshare.com/css?f[]=supreme@500,700,701&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <ul>
+            <li><a href="../">Accueil</a></li>
+            <li><a href="../manuel/regles">Règle du jeu</a></li>
+            <li><a href="../manuel/historique">Histoire du jeu</a></li>
+            <li><a href="../manuel/conception">Conception du jeu</a></li>
+            <li><a href="../contact">Nous contacter</a></li>
+            <li><a href="../jouer">Jouer en Ligne</a></li>
+            <li><a href="../jouer/telecharger">Telecharger</a></li>
+        </ul>
+    </nav>
+    <header>
+
+        <h1>Formulaire de contact</h1>
+
+        <main>
+
+    </header>
+    <h1>Si vous souhaitez nous contacter, veuillez remplir ce formulaire</h1>
+
+    <div>
+        <img src="/Images/Mail.png" alt="">
+    </div>
+
+    <form method=post enctype="text/plain" action="mailto:landry.foucault@gmail.com">
+
+        <div>
+            <label for="name">Saisir votre nom :</label>
+            <input type="text" id="name" name="user_name" required="required">
+        </div>
+        <div>
+            <label for="date">Votre date de naissance :</label>
+            <input type="date" id="start" name="trip-start">
+        </div>
+        <div>
+            <label for="objet">Objet du message : </label>
+            <input type="text" id="objet" name="objet">
+        </div>
+        <div>
+            <label for="objet">Saisir le message : </label>
+            <textarea id="message" name="message"></textarea>
+        </div>
+        <div class="button">
+            <a href="mailto:landry.foucault@gmail.com"><button type="submit">Valider</button></a>
+        </div>
+
+        </main>
+</body>
+
+</html>
