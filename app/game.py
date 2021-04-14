@@ -9,7 +9,6 @@ import json as json
 from data import Game
 from ihm import Home, NewGameSettings, JoinGameSettings, Settings, BoardView, PlayerStats, GameStats
 
-from math import inf
 from random import randrange
 
 """[CODE GUIDELINES]

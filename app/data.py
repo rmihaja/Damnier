@@ -1,5 +1,5 @@
 
-from math import inf, trunc
+from math import inf
 from copy import deepcopy
 
 # *** Data
@@ -229,7 +229,7 @@ class BoardData():
         row = pieceRow
         column = pieceColumn
 
-        for i in range(self.size):
+        for _ in range(self.size):
             row = row + rowOffset
             column = column + columnOffset
             # assure row column is inside of column
