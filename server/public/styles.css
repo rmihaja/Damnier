@@ -232,7 +232,7 @@ ol li {
 
 .images {
    display: flex;
-   width: 50%;
+   width: 100%;
    justify-content: space-between;
 }
 
@@ -302,7 +302,7 @@ ol li {
 
 /* conception */
 
-.interface {
+img.interface {
    width: 100%;
 }
 
