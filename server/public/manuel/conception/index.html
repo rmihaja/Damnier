@@ -42,22 +42,36 @@
     </header>
     <main>
 
-        <h2>Le jeu à été réalisé avec l'architecture MVC</h2>
+        <h1>Fonctionnalités et interfaces</h1>
 
-        <p>Le jeu est divisé en trois fichiers</p>
+        <img class="interface" src="../../Images/Interface.jpg" alt="Interface">
+        <img class="interface" src="../../Images/Menu.jpg" alt="Menu">
 
-        <h2> Le premier fichier : Game.py</h2>
+        <h1>Structure</h1>
 
-        <p>Ce fichier sert à lancer le jeu et fait le lien avec tkinter</p>
+        <img class="interface" src="./../../Images/structure.jpg" alt="">
 
-        <h2>Le deuxième fichier IHM.py:</h2>
+        <p>Le code source du jeu est organisé avec l'architecture MVC et la programmation objet. Le code est réparti en
+            trois fichiers :</p>
 
-        <p></p>Ce fichier sert à afficher le jeu(pions, dames, boutons, interface) dans la fenêtre crée précédemment par
+        <h2> Le fichier controleur : game.py</h2>
+
+        <p>Ce fichier sert à lancer le jeu et fait le lien avec le modèle et la vue.</p>
+
+        <h2>Le fichier vue : ihm.py</h2>
+
+        <p></p>Ce fichier sert à afficher le jeu (pions, dames, boutons, interface) dans la fenêtre crée précédemment
+        par
         game.py</p>
 
-        <h2>Le troisième fichier Data.py:</h2>
+        <h2>Le fichier modèle : data.py</h2>
 
-        <p>Ce fichier sert à modifier et gérer les déplacements des pions, dames</p>
+        <p>Ce fichier sert à gérer et modifier le représentation interne du jeu, qui est une matrice. <br>
+            Elle comporte également une classe qui gère l'intelligence artificielle, utilisant l'algorithme minimax.</p>
+
+        <h1>Vous voulez en savoir plus sur le code ?</h1>
+        <p>Notre projet est hébergé sur Github.</p>
+        <a href="https://github.com/Rmihaja/Damnier">Visiter le code source</a>
     </main>
     <footer>
         <p><a href="../../contact/mentions-legales/">Mentions légales</a></p>

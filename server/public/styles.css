@@ -14,7 +14,6 @@
    --brown1: #ac7d58;
    --yellow0: #ffeb41;
    --red0: #fd0002;
-   --box-radius: 10px;
 }
 
 .space-blue {
@@ -299,6 +298,12 @@ ol li {
 .type-pions img {
    max-width: 20%;
    margin-right: 10%;
+}
+
+/* conception */
+
+.interface {
+   width: 100%;
 }
 
 /* contact */
