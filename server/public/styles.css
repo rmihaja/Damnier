@@ -102,7 +102,8 @@ main {
 }
 
 .presentation h1,
-header h1 {
+header h1,
+nav .titre {
    font-size: 32px;
    font-family: 'Britannic Bold', Arial, sans-serif;
 }
@@ -129,6 +130,7 @@ div {
 
 img {
    width: 40%;
+   height: auto;
 }
 
 a,
@@ -348,6 +350,12 @@ form button {
    fill: #fff;
 }
 
+nav .titre {
+   color: #fff;
+   font-size: 20px;
+   margin-left: 10px;
+}
+
 /* media queries */
 
 @media (max-width: 768px) {
@@ -399,6 +407,8 @@ form button {
 
    .mobile-nav {
       display: flex;
+      align-items: center;
+      justify-content: flex-start;
    }
 
    .menu.ouvrir {
@@ -415,12 +425,6 @@ form button {
 
    #root:target .menu.fermer {
       display: flex;
-   }
-
-   .menu {
-      width: 100%;
-      align-items: center;
-      justify-content: flex-start;
    }
 
    /* footer */
