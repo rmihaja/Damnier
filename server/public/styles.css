@@ -111,7 +111,7 @@ main {
    align-items: center;
    justify-content: center;
    margin: 0 25%;
-   padding-bottom: 50px;
+   padding: 50px 0;
 }
 
 .presentation h1,
@@ -233,6 +233,10 @@ footer a {
 
 .command {
    font-family: 'Courier New', Courier, monopace;
+}
+
+ol li {
+   line-height: 40px;
 }
 
 /* historique */
