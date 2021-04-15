@@ -76,19 +76,6 @@
    font-style: italic;
 }
 
-/* media query */
-
-@media (max-width: 768px) {
-   ul,
-   div {
-      flex-direction: column;
-   }
-
-   .presentation {
-      margin-left: 0;
-   }
-}
-
 /* main styles */
 
 * {
@@ -111,7 +98,7 @@ main {
    align-items: center;
    justify-content: center;
    margin: 0 25%;
-   padding-bottom: 50px;
+   padding: 50px 0;
 }
 
 .presentation h1,
@@ -235,6 +222,10 @@ footer a {
    font-family: 'Courier New', Courier, monopace;
 }
 
+ol li {
+   line-height: 40px;
+}
+
 /* historique */
 
 .images {
@@ -250,6 +241,11 @@ footer a {
 
 .credits ul {
    list-style-type: none;
+   padding: 0;
+}
+
+.credits li {
+   text-align: left;
 }
 
 /* accueil */
@@ -279,7 +275,12 @@ footer a {
 
 /* règles */
 
+.regles ul {
+   list-style-type: square;
+}
+
 .type-pions {
+   padding: 0;
    width: 80%;
    display: flex;
    flex-direction: column;
@@ -330,4 +331,36 @@ textarea {
 
 form button {
    margin-top: 20px;
+}
+
+/* media queries */
+
+@media (max-width: 768px) {
+   .accueil,
+   nav ul,
+   .type-pions li,
+   footer {
+      flex-direction: column;
+   }
+
+   .presentation {
+      margin-top: 15px;
+      margin-left: 0;
+   }
+
+   main {
+      margin: 0 10%;
+   }
+
+   /* footer */
+
+   footer .auteur {
+      text-align: center;
+      padding: 0;
+      margin: 0 40px;
+      border-left: none;
+      border-right: none;
+      border-top: solid 2px var(--text-accent);
+      border-bottom: solid 2px var(--text-accent);
+   }
 }
