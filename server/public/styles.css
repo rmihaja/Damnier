@@ -109,7 +109,7 @@ h1 {
    font-size: 32px;
    text-align: center;
    /* regles */
-   /* background-color: wheat; */
+   background-color: var(--bg);
 }
 
 h2 {
