@@ -21,45 +21,35 @@
         </ul>
     </nav>
     <header>
-
         <h1>Formulaire de contact</h1>
-
-        <main>
-
     </header>
-    <h1>Si vous souhaitez nous contacter, veuillez remplir ce formulaire</h1>
 
-    <div>
-        <img src="/Images/Mail.png" alt="">
-    </div>
+    <main>
+        <h1>Une suggestion? Un avis? Contactez-nous avec ce formulaire</h1>
 
-    <form method=post enctype="text/plain" action="mailto:landry.foucault@gmail.com">
+        <img class="mail" src="/Images/mail.png" alt="">
 
-        <div>
-            <label for="name">Saisir votre nom :</label>
-            <input type="text" id="name" name="user_name" required="required">
-        </div>
-        <div>
-            <label for="date">Votre date de naissance :</label>
-            <input type="date" id="start" name="trip-start">
-        </div>
-        <div>
-            <label for="objet">Objet du message : </label>
-            <input type="text" id="objet" name="objet">
-        </div>
-        <div>
-            <label for="objet">Saisir le message : </label>
-            <textarea id="message" name="message"></textarea>
-        </div>
-        <div class="button">
-            <a href="mailto:landry.foucault@gmail.com"><button type="submit">Valider</button></a>
-        </div>
+        <form method=post action="mailto:landry.foucault@gmail.com">
 
-        </main>
-        <footer>
-            <p><a href="../contact/mentions-legales/">Mentions légales</a></p>
-            <p>Réalisé par Mihaja et Matthieu</p>
-        </footer>
+            <label for="nom">Votre nom :</label>
+            <input type="text" id="nom" name="nom" required>
+
+            <label for="naissance">Votre date de naissance :</label>
+            <input type="date" id="naissance" name="naissance">
+
+            <label for="objet">Objet du message :</label>
+            <input type="text" id="objet" name="objet" required>
+
+            <label for="message">Votre message :</label>
+            <textarea id="message" name="message" required></textarea>
+
+            <button type="submit">Envoyer</button>
+        </form>
+    </main>
+    <footer>
+        <p><a href="../contact/mentions-legales/">Mentions légales</a></p>
+        <p>Réalisé par Mihaja et Matthieu</p>
+    </footer>
 </body>
 
 </html>
