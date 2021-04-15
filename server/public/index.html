@@ -6,7 +6,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="./styles.css">
+    <script defer src="./script.js"></script>
 </head>
 
 <body>
@@ -16,26 +17,29 @@
             <li><a href="./manuel/regles">Règle du jeu</a></li>
             <li><a href="./manuel/historique">Histoire du jeu</a></li>
             <li><a href="./manuel/conception">Conception du jeu</a></li>
-            <li><a href="./contact">Nous contacter</a></li>
             <li><a href="./jouer">Jouer en Ligne</a></li>
             <li><a href="./jouer/telecharger">Telecharger</a></li>
         </ul>
     </nav>
-    <header>
-        <h1>Jeux de Dames</h1>
-    </header>
     <main>
-        <p>Voici le projet Python que nous avons réalisé, il s'agit d'un jeu de Dames. <br>
-            Le jeu de dames international se joue au maximum à deux joueurs sur un damier carré divisé en 100 cases
-            égales, alternativement
-            claires et foncées. <br>
-            Il y a 20 pions blancs et 20 pions noirs. <br>
-            Le but de ce jeu est de capturer ou d'immobiliser le plus grand nombre de pions possible.
-        </p>
+        <div class="accueil">
+            <img src="./Images/image.png" alt="jeu de dames">
+            <div class="presentation">
+                <h1>Damnier</h1>
+                <h3>Jeu de dames multijoueur - avec AI</h3>
+                <p>Damnier est une recréation de l'historique jeu de dames pour notre projet python.<br>
+                </p>
+                <div>
+                    <a href="./jouer/telecharger">Télécharger</a>
+                    <a href="./manuel/">En savoir plus</a>
+                </div>
+            </div>
+        </div>
     </main>
     <footer>
         <p><a href="./contact/mentions-legales/">Mentions légales</a></p>
-        <p>Réalisé par Mihaja et Matthieu</p>
+        <p class="auteur">Réalisé par Mihaja et Matthieu - Copyright 2021</p>
+        <p><a href="./contact">Nous contacter</a></p>
     </footer>
 </body>
 
