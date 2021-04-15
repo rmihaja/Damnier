@@ -1,18 +1,111 @@
+/* import de la police Supreme */
+
+@font-face {
+   font-family: 'Supreme';
+   src: url('https://cdn.fontshare.com/wf/SUHDN32QAMB5TXN2FDN4KBD2DDHYPMAW/HDTAGG7J7S6DBAS7WPC4KOT55GR5AHKC/MAWQNHJCFMDQROXVKLBWSTJXQH43DCCG.woff2')
+         format('woff2'),
+      url('https://cdn.fontshare.com/wf/SUHDN32QAMB5TXN2FDN4KBD2DDHYPMAW/HDTAGG7J7S6DBAS7WPC4KOT55GR5AHKC/MAWQNHJCFMDQROXVKLBWSTJXQH43DCCG.woff')
+         format('woff'),
+      url('https://cdn.fontshare.com/wf/SUHDN32QAMB5TXN2FDN4KBD2DDHYPMAW/HDTAGG7J7S6DBAS7WPC4KOT55GR5AHKC/MAWQNHJCFMDQROXVKLBWSTJXQH43DCCG.ttf')
+         format('truetype');
+   font-weight: 500;
+   font-display: swap;
+   font-style: normal;
+}
+
+@font-face {
+   font-family: 'Supreme';
+   src: url('https://cdn.fontshare.com/wf/H5XB5CS6BMBXDUYZYTWYXLQTKS26AZFM/M6WRQKQNLA2YFDRCRIRBKTWDSWKJC4ZW/D3MZ3NDLGELRW3OPOULQXNVYDIIEHLGG.woff2')
+         format('woff2'),
+      url('https://cdn.fontshare.com/wf/H5XB5CS6BMBXDUYZYTWYXLQTKS26AZFM/M6WRQKQNLA2YFDRCRIRBKTWDSWKJC4ZW/D3MZ3NDLGELRW3OPOULQXNVYDIIEHLGG.woff')
+         format('woff'),
+      url('https://cdn.fontshare.com/wf/H5XB5CS6BMBXDUYZYTWYXLQTKS26AZFM/M6WRQKQNLA2YFDRCRIRBKTWDSWKJC4ZW/D3MZ3NDLGELRW3OPOULQXNVYDIIEHLGG.ttf')
+         format('truetype');
+   font-weight: 700;
+   font-display: swap;
+   font-style: normal;
+}
+
+@font-face {
+   font-family: 'Supreme';
+   src: url('https://cdn.fontshare.com/wf/KJZ7ZEDMT6DF74D2F37PZKCUGX6HI3HF/IUKMITFCUNGYUD64YURFHBOVOLWINWUR/226TW4KEKKJPU52YZESJ3DOOFGH5P37I.woff2')
+         format('woff2'),
+      url('https://cdn.fontshare.com/wf/KJZ7ZEDMT6DF74D2F37PZKCUGX6HI3HF/IUKMITFCUNGYUD64YURFHBOVOLWINWUR/226TW4KEKKJPU52YZESJ3DOOFGH5P37I.woff')
+         format('woff'),
+      url('https://cdn.fontshare.com/wf/KJZ7ZEDMT6DF74D2F37PZKCUGX6HI3HF/IUKMITFCUNGYUD64YURFHBOVOLWINWUR/226TW4KEKKJPU52YZESJ3DOOFGH5P37I.ttf')
+         format('truetype');
+   font-weight: 700;
+   font-display: swap;
+   font-style: italic;
+}
+
+/* media query */
+
 @media (max-width: 480px) {
    ul {
       flex-direction: column;
    }
 }
-main {
-   margin: 40px 100px 40px 75px;
+
+/* main styles */
+
+html {
+   height: 100vh;
 }
+
+body {
+   height: 100%;
+   margin: 0px;
+   font-family: 'Supreme', Helvetica, sans-serif;
+}
+
+h1 {
+   font-size: 40px;
+   text-align: center;
+   /* regles */
+   background-color: wheat;
+}
+
+h2 {
+   margin-bottom: 50px;
+   font-size: 30px;
+}
+
+h3 {
+   text-align: center;
+   margin: 0px 0px 25px 0px;
+}
+
+div {
+   text-align: center;
+}
+
+img {
+   width: 600px;
+   height: 600px;
+}
+
+p {
+   font-size: 26px;
+   margin-top: 0px;
+   margin-left: 40px;
+   text-align: center;
+   margin-bottom: 25px;
+}
+
+/* nav */
+
 nav {
    background-color: black;
    display: flex;
    justify-content: center;
    width: 100%;
    text-align: center;
-   font-family: 'Supreme', sans-serif;
+}
+
+nav ul {
+   display: flex;
+   margin: 0px;
 }
 
 nav li {
@@ -28,46 +121,18 @@ nav a {
    color: white;
 }
 
-nav ul {
-   display: flex;
-   margin: 0px;
-}
-
-body {
-   margin: 0px;
-}
-
-img {
-   width: 600px;
-   height: 600px;
-}
-
-Alignement {
-   display: flex;
-}
-
-main p {
-   font-size: 30px;
-   margin-top: 0px;
-   margin-left: 40px;
-   text-align: center;
-   font-family: 'Supreme', sans-serif;
-}
-
 header {
    background-color: wheat;
    display: flex;
    justify-content: center;
+   text-transform: capitalize;
 }
 
-header p {
-   font-family: 'Supreme', sans-serif;
+main {
+   margin: 40px 100px 40px 75px;
 }
 
-h1 {
-   font-family: 'Supreme', sans-serif;
-   font-size: 40px;
-}
+/* footer */
 
 footer {
    display: flex;
@@ -75,7 +140,6 @@ footer {
    width: 100%;
    padding: 15px 0px 15px 0px;
    background-color: wheat;
-   font-family: 'Supreme', sans-serif;
 }
 
 footer * {
@@ -87,4 +151,58 @@ footer * {
 
 footer a {
    border-right: solid 2px black;
+}
+
+/* telecharger */
+
+.command {
+   font-family: 'Courier New', Courier, monopace;
+}
+
+/* contact */
+
+form div {
+   margin-bottom: 20px;
+}
+
+/* historique */
+
+.images {
+   display: flex;
+}
+
+.images img {
+   width: 50%;
+   margin-left: 12px;
+}
+
+.credits a {
+   text-align: center;
+   text-decoration: none;
+}
+
+.credits ul {
+   list-style-type: none;
+}
+
+/* règles */
+
+.pion {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
+
+.pion p {
+   margin-left: 200px;
+}
+
+.dame {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+
+.dame p {
+   margin-left: 250x;
 }
