@@ -40,7 +40,7 @@
     <header>
         <h1>Conception du jeu</h1>
     </header>
-    <main>
+    <main class="conception">
 
         <h1>Fonctionnalités et interfaces</h1>
 
@@ -51,27 +51,36 @@
 
         <img class="interface" src="./../../Images/structure.jpg" alt="">
 
-        <p>Le code source du jeu est organisé avec l'architecture MVC et la programmation objet. Le code est réparti en
+        <p>Le code source du jeu suit l'architecture MVC et le paradigme de la POO (Programmation Orientée Objet).
+            Ainsi, le
+            code est réparti en
             trois fichiers :</p>
 
         <h2> Le fichier controleur : game.py</h2>
 
-        <p>Ce fichier sert à lancer le jeu et fait le lien avec le modèle et la vue.</p>
+        <p>Ce fichier sert à lancer le jeu et fait le lien entre le modèle et la vue. Il prend également en charge les
+            événements de l'utilisateur et du serveur.</p>
 
         <h2>Le fichier vue : ihm.py</h2>
 
-        <p></p>Ce fichier sert à afficher le jeu (pions, dames, boutons, interface) dans la fenêtre crée précédemment
-        par
-        game.py</p>
+        <p>Ce fichier sert à afficher le jeu (pions, dames, boutons, interface, menu) dans la
+            fenêtre crée précédemment
+            par
+            game.py. La librairie Tkinter, directement intégrée à Python, est utilisée pour les objets de Vue, rendant
+            le jeu multiplaforme.</p>
 
         <h2>Le fichier modèle : data.py</h2>
 
-        <p>Ce fichier sert à gérer et modifier le représentation interne du jeu, qui est une matrice. <br>
-            Elle comporte également une classe qui gère l'intelligence artificielle, utilisant l'algorithme minimax.</p>
+        <p>Ce fichier sert à gérer l'état du jeu (taille du plateau, présence d'un minuteur, ...) et modifier sa
+            représentation interne, qui est une matrice de chaine de caractères à valeurs décodables par la Vue, pour
+            une
+            représentation graphique du jeu que le joueur puisse comprendre et intéragir. <br>
+            Elle comporte également une classe qui gère l'intelligence artificielle, utilisant l'algorithme minimax pour
+            calculer le meilleur mouvement possible avantageant le joueur IA.</p>
 
         <h1>Vous voulez en savoir plus sur le code ?</h1>
         <p>Notre projet est hébergé sur Github.</p>
-        <a href="https://github.com/Rmihaja/Damnier">Visiter le code source</a>
+        <a href="https://github.com/Rmihaja/Damnier" target="_blank">Visiter le code source</a>
     </main>
     <footer>
         <p><a href="../../contact/mentions-legales/">Mentions légales</a></p>

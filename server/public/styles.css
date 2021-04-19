@@ -250,6 +250,10 @@ ol li {
    text-align: left;
 }
 
+.histoire p:not(:first-of-type) {
+   text-align: justify;
+}
+
 /* accueil */
 
 .accueil {
@@ -304,6 +308,10 @@ ol li {
 
 img.interface {
    width: 100%;
+}
+
+.conception p {
+   text-align: justify;
 }
 
 /* contact */
